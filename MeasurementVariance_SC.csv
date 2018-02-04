@@ -1,0 +1,10 @@
+,STD,Variance,CV,Flag,Description
+SUCH,,,0.3,2,Sucrose (kg/ha)
+LAIGD,,,0.3,2,LAI at harvest
+STKH,,,0.3,2,Stem weight at harvest (kg/ha)
+AELH,,,0.3,2,Aerial dry biomass at harvest (t/ha)
+LAIX,,,0.3,2,Maximum leaf area index 
+HIAM,,,0.4,0,Harvest index at maturity 
+L.SM,,,0.3,1,"Leaf number per stem at maturity. The symbol ""#"" was changed to ""."", since it is the symbol of comments in R."
+CHTA,,,0.3,1,Canopy height (m)
+EDAP,,,0.3,1,Emergence date

@@ -1,0 +1,10 @@
+,STD,Variance,CV,Flag,Description
+EDAP,3,9,,1,Emergence day (dap).
+ADAP,3,9,,1,Anthesis day (dap).                                  
+MDAP,7,49,,1,Physiological maturity day (dap).                   
+PD1T,4,16,,1,First pod date (YrDoy).                              
+HWAM,,,0.3,2,Yield at harvest maturity (kg [dm]/ha). 
+CWAM,,,0.3,2,Tops weight at maturity (kg [dm]/ha).  
+LAIX,,,0.4,2,"Leaf area index, maximum."
+HWUM,,,0.1,2,Grain unit weight at maturity (g/seed)
+L.SM,3,9,,2,"Leaf number per stem at maturity. The symbol ""#"" was changed to ""."", since it is the symbol of comments in R."

@@ -1,0 +1,9 @@
+,STD,Variance,CV,Flag,Description
+FWAH,3,9,,2,Fresh weight at harvest (t/ha)
+EWUM,3,9,,2,Eye weight (g) 
+E.UM,,,0.3,2,Eye number at maturity (no/fruit)
+MDAP,7,49,,1,Physiological maturity day (dap).                   
+FDAP,3,9,,1,Forcing Date
+BADMF,,,0.3,2,"Above-ground biomass at forcing (pineapple, t/ha)"
+BADMH,,,0.3,2,"Aerial biomass (green+dead), dm at harvest (t/ha) "
+LAIX,,,0.4,2,"Leaf area index, maximum."

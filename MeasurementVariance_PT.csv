@@ -1,0 +1,7 @@
+,STD,Variance,CV,Flag,Description
+TDAP,3,9,,1,Begin tuber growth (DAP)
+MDAP,7,49,,1,Physiological maturity day (dap).                   
+UWAH,,,0.3,2,Tuber dry yield (kg/ha)
+UYAH,,,0.3,2,Tuber fresh yield (Mg/ha)
+TWAH,,,0.3,2,Top weight at harvest (kg/ha)
+LAIX,,,0.4,2,"Leaf area index, maximum."
