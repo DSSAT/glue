@@ -86,7 +86,7 @@ write("GLUE will run for growth only.", file = ModelRunIndicatorPath, append = T
 #If only estimated phenology dates, then only the first round GLUE will be conducted; if only estimated growth, then only the
 #second round GLUE will be conducted.
 
-## (5) Get the  name of the genotype file of current crop.
+## (5) Get the  name of the genotype file of current crop and the name of current model
 eval(parse(text=paste("BatchFile<-readLines('",OD,"/",CultivarBatchFile,"',n=-1)",sep = '')));
 CropNameAddress<-grep('BATCH', BatchFile);
 CropNameStart<-18; #
@@ -105,38 +105,19 @@ CultivarID<-substr(BatchFile[CropNameAddress], CultivarIDStart, CultivarIDEnd);
 CultivarName<-substr(BatchFile[CropNameAddress], CultivarNameStart, CultivarNameEnd);
 write(c("Cultivar ID =",CultivarName), file = ModelRunIndicatorPath, ncolumns=2, append = T);
 #Get the cultivar ID and name.
-
 ## "$BATCH(CULTIVAR):MZIM0003 APPOLO" is an example to show how to get the crop name and cultivar ID. 
 ##From this line, we can get to know the crop name "MZ" (18-19), the cultivar ID "IM0003" (20-25).
 
+# Model name
+DSSATPro = readLines(paste0(DSSATD,"/DSSATPRO.v47"))
+LineNo = grep(paste0("M",CropName),DSSATPro)
+LineSplit = unlist(strsplit(DSSATPro[LineNo]," "))
+ModelSelect = LineSplit[length(LineSplit)]
+
+# Get the genotype file name
 GenotypeFilePath<-GD;
+CurrentGenotypeFile<-paste0(GD, "/",CropName,substr(ModelSelect,3,8),".CUL")
 
-if ((CropName != "MZ")& (CropName != "SC")& (CropName != "SW") & (CropName != "WH")& (CropName != "BA") & (CropName != "RI"))   
-{
-eval(parse(text=paste("CurrentGenotypeFile<-list.files(path=GenotypeFilePath, pattern = '^",CropName
-,"[A-Z]*[0-9]*.CUL$', all.files = T, full.names = T)",sep = '')));
-#print(CurrentGenotypeFile);
-} else if (CropName == "MZ")
-{
-CurrentGenotypeFile<-paste(GD, "/MZCER047.CUL", sep="");
-} else if (CropName == "SC")
-{
-CurrentGenotypeFile<-paste(GD, "/SCCAN047.CUL", sep="");
-} else if (CropName == "SW")
-{
-CurrentGenotypeFile<-paste(GD, "/SWCER047.cul", sep="");
-}else if  (CropName == "WH")
-{
-CurrentGenotypeFile<-paste(GD, "/WHCER047.CUL", sep="");
-}else if  (CropName == "BA")
-{
-CurrentGenotypeFile<-paste(GD, "/BACER047.CUL", sep="");
-}else if  (CropName == "RI")
-{
-CurrentGenotypeFile<-paste(GD, "/RICER047.CUL", sep="");
-}
-
-#print(CurrentGenotypeFile);
 #Get the names of the genotype file template that will be used, which shoud start with crop name such as "MZ",
 #and end with extension name ".CUL". Since there are two genotype files starting with "MZ" and ending with
 #".CUL" under the "Genotype" folder of DSSAT, it was set as "MZCER047.CUL" as default value.
