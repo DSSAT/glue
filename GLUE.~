@@ -115,34 +115,10 @@ LineNo = grep(paste0("M",CropName),DSSATPro)
 LineSplit = unlist(strsplit(DSSATPro[LineNo]," "))
 ModelSelect = LineSplit[length(LineSplit)]
 
+# Get the genotype file name
 GenotypeFilePath<-GD;
+CurrentGenotypeFile<-paste0(GD, "/",CropName,substr(ModelSelect,3,8),".CUL")
 
-if ((CropName != "MZ")& (CropName != "SC")& (CropName != "SW") & (CropName != "WH")& (CropName != "BA") & (CropName != "RI"))   
-{
-eval(parse(text=paste("CurrentGenotypeFile<-list.files(path=GenotypeFilePath, pattern = '^",CropName
-,"[A-Z]*[0-9]*.CUL$', all.files = T, full.names = T)",sep = '')));
-#print(CurrentGenotypeFile);
-} else if (CropName == "MZ")
-{
-CurrentGenotypeFile<-paste(GD, "/MZCER047.CUL", sep="");
-} else if (CropName == "SC")
-{
-CurrentGenotypeFile<-paste(GD, "/SCCAN047.CUL", sep="");
-} else if (CropName == "SW")
-{
-CurrentGenotypeFile<-paste(GD, "/SWCER047.cul", sep="");
-}else if  (CropName == "WH")
-{
-CurrentGenotypeFile<-paste(GD, "/WHCER047.CUL", sep="");
-}else if  (CropName == "BA")
-{
-CurrentGenotypeFile<-paste(GD, "/BACER047.CUL", sep="");
-}else if  (CropName == "RI")
-{
-CurrentGenotypeFile<-paste(GD, "/RICER047.CUL", sep="");
-}
-
-#print(CurrentGenotypeFile);
 #Get the names of the genotype file template that will be used, which shoud start with crop name such as "MZ",
 #and end with extension name ".CUL". Since there are two genotype files starting with "MZ" and ending with
 #".CUL" under the "Genotype" folder of DSSAT, it was set as "MZCER047.CUL" as default value.
