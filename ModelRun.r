@@ -11,35 +11,7 @@ ModelRun<-function(WD, OD, DSSATD, GD, CropName, GenotypeFileName, CultivarID, R
 for (i in 1:NumberOfModelRun)
 {
 ################### 1. Model Run ##################
-if(i==1)
-{
-Indicator<-sprintf("This is the %ist batch of model run of GLUE %i, please wait...",i,RoundOfGLUE,"\n");
-#An indicator to show the order of model run.
-cat(Indicator,"\n");
-} else if(i==2)
-{
-Indicator<-sprintf("This is the %ind batch of model run of GLUE %i, please wait...",i,RoundOfGLUE,"\n");#An indicator to show the order of model run.
-cat(Indicator,"\n");
-} else if(i==3)
-{
-Indicator<-sprintf("This is the %ird batch of model run of GLUE %i, please wait...",i,RoundOfGLUE,"\n");#An indicator to show the order of model run.
-cat(Indicator,"\n");
-} else
-{
-Indicator<-sprintf("This is the %ith batch of model run of GLUE %i, please wait...",i,RoundOfGLUE,"\n");#An indicator to show the order of model run.
-cat(Indicator,"\n");
-}
-
-eval(parse(text=paste("ModelRunIndicatorPath='",OD,"/ModelRunIndicator.txt'",sep = '')));##Path of the model run indicator file.
-if (RoundOfGLUE==1 & i==1)
-{
-write(Indicator, file = ModelRunIndicatorPath, append = T); 
-} else
-{ 
-write(Indicator, file = ModelRunIndicatorPath, append = T);
-}
-
-ModelRunNumber<-i;#Dtermine the number of model run.
+ModelRunNumber<-i
 eval(parse(text = paste("source('",WD,"/GenotypeChange.r')",sep = '')));#Tell the location of the function.
 GenotypeChange(GD, DSSATD, OD, CropName, GenotypeFileName, CultivarID, TotalParameterNumber, ModelRunNumber, RandomMatrix); #Change the genotype file.
 
@@ -48,17 +20,7 @@ setwd(OD);
 
 eval(parse(text = paste("system('",DSSATD,"/DSCSM047.EXE ",ModelSelect," B ",OD,"/DSSBatch.v47')",sep = '')));
 #Call the bath file to run the model.
-
-if (CropName != "CS")
-{
-  CurrentEvaluateFile<-list.files(path=OD, pattern = "Evaluate.OUT");
-}else
-{
-  CurrentEvaluateFile<-list.files(path=OD, pattern = "EVALUATE.OUT");
-}
-#Cassava has different name of Evaluate file, all upper case.
-
-if ((file.exists("Evaluate.OUT")== F) || (file.exists("EVALUATE.OUT")== F))
+if (file.exists("Evaluate.OUT")== F)
 {
   next;
 }else
@@ -70,7 +32,6 @@ if ((file.exists("Evaluate.OUT")== F) || (file.exists("EVALUATE.OUT")== F))
  #Save the evaluate output, but replace the previous output.
 
 ################### 2. Data Processing ##################
-
  eval(parse(text = paste("EvaluateFile<-readLines('",OD,"/Evaluate_output.txt',n=-1)",sep = '')));
 
  Error1Address<-match('NaN',EvaluateFile);

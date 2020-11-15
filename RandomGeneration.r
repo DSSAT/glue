@@ -1,6 +1,6 @@
 ##Main function of generating random parameter values
 
-RandomGeneration<-function(WD, GD, CropName, CultivarID, GenotypeFileName, ParameterProperty, ParameterAddress, TotalParameterNumber, NumberOfModelRun, RoundOfGLUE, GLUEFlag)
+RandomGeneration<-function(WD,CulData, TotalParameterNumber, ncol.predefined,NumberOfModelRun, RoundOfGLUE, GLUEFlag)
 {
 
 Option="U";
@@ -9,7 +9,7 @@ Option="U";
 if(Option=="U")
 {
 eval(parse(text = paste("source('",WD,"/Uniform.r')",sep = '')));
-RandomParameter<-(Uniform(GD, CropName, CultivarID, GenotypeFileName, ParameterProperty, ParameterAddress, TotalParameterNumber, NumberOfModelRun, RoundOfGLUE, GLUEFlag));
+RandomParameter<-(Uniform(CulData, TotalParameterNumber, ncol.predefined,NumberOfModelRun, RoundOfGLUE, GLUEFlag));
 #Get rid of the negative random values through ABS();
 
 }

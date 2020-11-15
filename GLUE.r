@@ -141,70 +141,103 @@ eval(parse(text=paste("source('",WD,"/BatchFileSetUp.r')",sep = '')));
 BatchFileSetUp(WD, OD, CultivarBatchFile);
 write(c("DSSAT batch file =",CultivarBatchFile), file = ModelRunIndicatorPath, ncolumns=2, append = T);
 
+## (7) Get the parameter property file (miminum, maximum, and flg values) and the number of parameters.
+CulFile = readLines(paste0(GD,"/",GenotypeFileName,".CUL"))
+CulFile = CulFile[-which(substr(CulFile,1,1) == "!")] #ignore lines starting with !
+
+#locate parameter properties
+LineNo.title = grep("@VAR#",CulFile)
+LineNo.min = grep("999991 MINIMA",CulFile)
+LineNo.max = grep("999992 MAXIMA",CulFile)
+LineNo.cal = grep("@CALIBRATION",CulFile)
+Lineno.thiscul = grep(CultivarID,CulFile)
+
+LineNo.all = c(LineNo.title,LineNo.min,LineNo.max,Lineno.thiscul,LineNo.cal)
+
+# discard content after !, and remove the extra space at the end of lines
+CulFile = CulFile[LineNo.all]
+LineNo.exc = grep("!",CulFile)
+if (length(LineNo.exc)!=0){
+  
+  for (itemp in 1:length(LineNo.exc)){
+    
+    ExcSplit = unlist(strsplit(CulFile[LineNo.exc[itemp]],"!"))
+    CulFile[LineNo.exc[itemp]] = ExcSplit[1]
+    
+    Loc.space = unlist(stringr::str_locate_all(ExcSplit[1]," "))
+    
+    for (iLoc in length(Loc.space):1) {
+      
+      if(Loc.space[iLoc]-Loc.space[iLoc-1] > 1){
+        
+        No.space = length(Loc.space) - iLoc + 1
+        break
+        
+      } else {
+        
+        No.space = 0
+        
+      }
+      
+    }
+    CulFile[LineNo.exc[itemp]] = substr(ExcSplit[1],1,nchar(ExcSplit[1])-No.space)
+    
+    # print(No.space)
+    # print(CulFile)
+  }
+  
+}
+
+# convert text to dataframe
+CulFile = paste0(substr(CulFile,1,6), substr(CulFile,30,nchar(CulFile)[1]))
+header = unlist(strsplit(CulFile[1]," "))
+header = header[-which(nchar(header)<1)]
+CulData = read.table(textConnection(CulFile[-c(1,5)]),header = F)
+colnames(CulData) = header
+
+Cali = unlist(strsplit(CulFile[5],"         "))
+Cali.reshape = paste(Cali[1],"placeholder",Cali[2],sep = " ")
+Cali.df = read.table(textConnection(Cali.reshape),header = F)
+colnames(Cali.df) = header
+CulData = rbind(CulData,Cali.df)
+#CulData
+
+ncol.predefined = which(header=="ECO#")
+TotalParameterNumber = ncol(CulData) - ncol.predefined #Get the total number of the parameters.
+ParameterNames = header[-c(1:ncol.predefined)]
+write(c("Parameters =",ParameterNames), file = ModelRunIndicatorPath, append = T)
+
 #################Step 2: Begin the GLUE procedure.#################
 for (i in StartRoundOfGLUE:TotalRoundOfGLUE)
 {
 
 RoundOfGLUE<-i;
 
-## (1) Get the parameter property file (miminum, maximum, and flg values) and the number of parameters.
-#library(xlsReadWrite);
-#eval(parse(text = paste("ParameterProperty<-read.xls('",WD,
-#"/ParameterProperty.xls',sheet = 'Sheet 1', rowNames = T, colNames=T)",sep = '')));
-
-eval(parse(text = paste("ParameterProperty<-read.csv('",WD,
-"/ParameterProperty.csv', header = T)",sep = '')));
-newRonames <- ParameterProperty[, 1]; 
-ParameterProperty <- ParameterProperty[, -1];
-rownames(ParameterProperty)<- newRonames;
-
-TotalParameterNumber <- ParameterProperty[CropName, "Flag"]; #Get the total number of the parameters.
-
-#library(xlsReadWrite);
-#eval(parse(text = paste("ParameterPropertyWithRow<-read.xls('",WD,
-#"/ParameterProperty.xls',sheet = 'Sheet 1', rowNames = F, colNames=T)",sep = '')));
-
-eval(parse(text = paste("ParameterPropertyWithRow<-read.csv('",WD,
-"/ParameterProperty.csv', header = T)",sep = '')));
-newRonames <- ParameterPropertyWithRow[, 1]; 
-ParameterPropertyWithRow <- ParameterPropertyWithRow[, -1];
-rownames(ParameterPropertyWithRow)<- newRonames;
-
-ParameterAddress<-which(rownames(ParameterPropertyWithRow)==CropName); #Get the address of the parameters.
-ParameterStart<-ParameterAddress+1;
-ParameterEnd<-ParameterAddress+TotalParameterNumber;
-
-ParameterNames<-rownames(ParameterProperty[ParameterStart:ParameterEnd,]);
-ShortParameterNames<-substring(ParameterNames,4,100)
-write(c("Parameters =",ShortParameterNames), file = ModelRunIndicatorPath, ncolumns=100, append = T);
-#Read the maximum and minimum values for each parameter.
-
-## (2) Generate random values for the paramter set concerned.
-
+## (1) Generate random values for the paramter set concerned.
 eval(parse(text = paste("source('",WD,"/RandomGeneration.r')",sep = '')));
-RandomMatrix<-RandomGeneration(WD, GD, CropName, CultivarID, GenotypeFileName, ParameterProperty, ParameterAddress, TotalParameterNumber, NumberOfModelRun, RoundOfGLUE, GLUEFlag);
+RandomMatrix<-RandomGeneration(WD,CulData, TotalParameterNumber, ncol.predefined,NumberOfModelRun, RoundOfGLUE, GLUEFlag);
 write("Random parameter sets have been generated...", file = ModelRunIndicatorPath, append = T);
 write("Model runs are starting...", file = ModelRunIndicatorPath, append = T);
 
-## (3) Create new genotype files with the generated parameter sets and run the DSSAT model with them.
+## (2) Create new genotype files with the generated parameter sets and run the DSSAT model with them.
 eval(parse(text = paste("source('",WD,"/ModelRun.r')",sep = '')));
 ModelRun(WD, OD, DSSATD, GD, CropName, GenotypeFileName, CultivarID, RoundOfGLUE, TotalParameterNumber, NumberOfModelRun, RandomMatrix);
 write("Model run is finished...", file = ModelRunIndicatorPath, append = T)
 
 write("Likelihood calculation is starting...", file = ModelRunIndicatorPath, append = T);
 
-## (4) Calculate the likelihood values for each parameter set.
+## (3) Calculate the likelihood values for each parameter set.
 eval(parse(text = paste("source('",WD,"/LikelihoodCalculation.r')",sep = '')));
 LikelihoodCalculation(WD, OD, CropName, ParameterNames, RoundOfGLUE);
 write("Likelihood calculation is finished...", file = ModelRunIndicatorPath, append = T);
 write("Starting calculation of posterior distribution...", file = ModelRunIndicatorPath, append = T);
 
-## (5) Derivation of posterior distribution.
+## (4) Derivation of posterior distribution.
 eval(parse(text = paste("source('",WD,"/PosteriorDistribution.r')",sep = '')));
 PosteriorDistribution(WD, OD, ParameterNames, ParameterProperty, CropName, RoundOfGLUE);
 write("Posterior distribution is derived...", file = ModelRunIndicatorPath, append = T);
 
-## (6)  Indicator of model running to show the round of GLUE is finished.
+## (5)  Indicator of model running to show the round of GLUE is finished.
 
 if (RoundOfGLUE==1)
 {
@@ -222,7 +255,7 @@ write(Indicator, file = ModelRunIndicatorPath, append = T);
 eval(parse(text = paste("source('",WD,"/OptimalParameterSet.r')",sep = '')));
 OptimalParameterSet(GLUEFlag, OD, DSSATD, CropName, CultivarID, CultivarName, GenotypeFileName, TotalParameterNumber);
 
-options(show.error.message=T);
+options(show.error.message=T)
 
  
 
