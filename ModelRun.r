@@ -46,7 +46,7 @@ GenotypeChange(GD, DSSATD, OD, CropName, GenotypeFileName, CultivarID, TotalPara
 setwd(OD);
 #Set the path for program to call the bath file running.
 
-eval(parse(text = paste("system('",DSSATD,"/DSCSM047.EXE B ",OD,"/DSSBatch.v47')",sep = '')));
+eval(parse(text = paste("system('",DSSATD,"/DSCSM047.EXE ",ModelSelect," B ",OD,"/DSSBatch.v47')",sep = '')));
 #Call the bath file to run the model.
 
 if (CropName != "CS")
