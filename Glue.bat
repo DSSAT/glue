@@ -1,1 +1,1 @@
-C:\PROGRA~1\MIE74D~1\RCLIEN~1\R_SERVER\\bin\x64\RTerm --slave < C:\dssat47\Tools\Glue\Glue.r
+C:\PROGRA~1\R\R-40~1.3\bin\x64\RTerm --slave < C:\dssat48\Tools\Glue\Glue.r

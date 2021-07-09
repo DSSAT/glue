@@ -21,7 +21,7 @@ SubCultivarBatchFile<-CultivarBatchFile[StartLine:EndLine];
 NewBatchFile<-c(BatchFileTamplate, SubCultivarBatchFile);
 #print(NewBatchFile); 
 
-eval(parse(text=paste("NewBatchFilePath='",OD,"/DSSBatch.v47'",sep = '')));
+eval(parse(text=paste("NewBatchFilePath='",OD,"/DSSBatch.v48'",sep = '')));
 write(NewBatchFile, file=NewBatchFilePath);
 }
 

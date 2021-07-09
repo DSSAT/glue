@@ -1,42 +1,10 @@
 ##Generate random numbers that follows uniform distribution
 
-Uniform<-function(GD, CropName, CultivarID, GenotypeFileName, ParameterProperty, ParameterAddress, TotalParameterNumber, NumberOfModelRun, RoundOfGLUE, GLUEFlag)
+Uniform<-function(CulData, TotalParameterNumber, ncol.predefined,NumberOfModelRun, RoundOfGLUE, GLUEFlag)
 {
-
 #(1)Read default values.
-eval(parse(text=paste('GenotypeFilePath="',GD,'/',GenotypeFileName,'.CUL"',sep = '')));
-ReadLine<-readLines(GenotypeFilePath, n=-1);
-#print(ReadLine);
-GenotypeFile<-as.character(ReadLine);
-CultivarID<-paste('^',CultivarID, sep=""); 
-LineNumber<-grep(pattern=CultivarID, GenotypeFile);
-OldLine<-GenotypeFile[LineNumber];#Get the line according to the line number.
-
-if(CropName != "SC")
-{
-  Step=6;
-  ValueStart<-(38-Step);
-  ValueEnd<-(42-Step);
-} else
-{
-  Step=15;
-# chp changed 34 -> 37;  47 -> 51
-  ValueStart<-(37-Step);
-  ValueEnd<-(51-Step);
-}
-
-DefaultValue<-c();
-
-for (i in 1:TotalParameterNumber)
-{
-ValueStart<-ValueStart+Step;
-ValueEnd<-ValueEnd+Step;
-
-ParameterValue<-as.numeric(substr(OldLine, ValueStart, ValueEnd));
-DefaultValue<-cbind(DefaultValue, ParameterValue);
-}
-
-#Read the initial genotype file so as to read the default values for each parameters.
+col.parastart = ncol.predefined + 1  
+DefaultValue = CulData[3,col.parastart:ncol(CulData)]
 
 #(2) Read parameter set that have the maximum likelihood values when first round of GLUE is finished.
 if ((GLUEFlag==1)&(RoundOfGLUE==2))
@@ -50,75 +18,75 @@ MaximumProbability<-as.numeric(PosteriorDistribution1["MaxProbability", ]);
 
 #(3) Generate random numbers
 ParameterMatrix<-c();
-ParameterAddress<-ParameterAddress+1;
 
 for (i in 1:TotalParameterNumber)
 {
 #Generate uniform random values for P[i], i is the total number of parameters involved.
-Flag<-ParameterProperty[ParameterAddress, 'Flag'];
+colNo = i + ncol.predefined
+Flag = CulData[4,colNo]
 
 if (GLUEFlag==1)
 {
   if (RoundOfGLUE==1)
   {
-    if (Flag==1)
+    if (Flag=="P")
     {
-    Minimum=ParameterProperty[ParameterAddress, 'Minimum'];
-    Maximum=ParameterProperty[ParameterAddress, 'Maximum'];
-    } else if (Flag==0)
+     Minimum=as.numeric(as.character(CulData[1,colNo]))
+     Maximum=as.numeric(as.character(CulData[2,colNo]))
+    } else if (Flag=="N")
     {
-    Minimum=DefaultValue[i];
-    Maximum=DefaultValue[i];
-    } else if (Flag==2)
+     Minimum=as.numeric(DefaultValue[i])
+     Maximum=as.numeric(DefaultValue[i])
+    } else if (Flag=="G")
     {
-    Minimum=DefaultValue[i];
-    Maximum=DefaultValue[i];
+     Minimum=as.numeric(DefaultValue[i])
+     Maximum=as.numeric(DefaultValue[i])
     }
   } else if (RoundOfGLUE==2)
   {
-    if(Flag==2)
+    if(Flag=="G")
     {
-    Minimum=ParameterProperty[ParameterAddress, 'Minimum'];
-    Maximum=ParameterProperty[ParameterAddress, 'Maximum'];
-    } else if (Flag==0)
+     Minimum=as.numeric(as.character(CulData[1,colNo]))
+     Maximum=as.numeric(as.character(CulData[2,colNo]))
+    } else if (Flag=="N")
     {
-    Minimum=DefaultValue[i];
-    Maximum=DefaultValue[i];
-    } else if (Flag==1)
+     Minimum=as.numeric(DefaultValue[i])
+     Maximum=as.numeric(DefaultValue[i])
+    } else if (Flag=="P")
     {
-    Minimum=MaximumProbability[i];
-    Maximum=MaximumProbability[i];
+     Minimum=MaximumProbability[i];
+     Maximum=MaximumProbability[i];
     }
   }
 } else if (GLUEFlag==2)
 {
-    if (Flag==1)
+    if (Flag=="P")
     {
-    Minimum=ParameterProperty[ParameterAddress, 'Minimum'];
-    Maximum=ParameterProperty[ParameterAddress, 'Maximum'];
-    } else if (Flag==0)
+    Minimum=as.numeric(as.character(CulData[1,colNo]))
+    Maximum=as.numeric(as.character(CulData[2,colNo]))
+    } else if (Flag=="N")
     {
-    Minimum=DefaultValue[i];
-    Maximum=DefaultValue[i];
-    } else if (Flag==2)
+    Minimum=as.numeric(DefaultValue[i])
+    Maximum=as.numeric(DefaultValue[i])
+    } else if (Flag=="P")
     {
-    Minimum=DefaultValue[i];
-    Maximum=DefaultValue[i];
+    Minimum=as.numeric(DefaultValue[i])
+    Maximum=as.numeric(DefaultValue[i])
     }
 } else if (GLUEFlag==3)
 {
-     if (Flag==0)
+     if (Flag=="N")
     {
-    Minimum=DefaultValue[i];
-    Maximum=DefaultValue[i];
-    } else if (Flag==1)
+     Minimum=as.numeric(DefaultValue[i])
+     Maximum=as.numeric(DefaultValue[i])
+    } else if (Flag=="P")
     {
-    Minimum=DefaultValue[i];
-    Maximum=DefaultValue[i];
-    } else if (Flag==2)
+     Minimum=as.numeric(DefaultValue[i])
+     Maximum=as.numeric(DefaultValue[i])
+    } else if (Flag=="G")
     {
-    Minimum=ParameterProperty[ParameterAddress, 'Minimum'];
-    Maximum=ParameterProperty[ParameterAddress, 'Maximum'];
+    Minimum=as.numeric(as.character(CulData[1,colNo]))
+    Maximum=as.numeric(as.character(CulData[2,colNo]))
     }
 }
  
@@ -126,7 +94,6 @@ GenerateParameter<-runif(NumberOfModelRun,min=Minimum,max=Maximum);
 MatrixGeneratedParameter<-matrix(GenerateParameter, nrow=NumberOfModelRun, ncol=1, byrow=T);
 ParameterMatrix<-cbind(ParameterMatrix, MatrixGeneratedParameter);
 
-ParameterAddress<-ParameterAddress+1;
 }
 
 #print(ParameterMatrix);
