@@ -8,8 +8,8 @@ eval(parse(text=paste('Evaluation<-read.table("',OD,'/EvaluateFrame_2.txt", head
 #print(Evaluation);
 Dimension<-dim(Evaluation);
 
-Treatments<-Evaluation[,"RUN"]
-TreatmentNumberIndex<-which.max(Evaluation[,"RUN"]);
+Treatments<-Evaluation[,"X.RUN"]
+TreatmentNumberIndex<-which.max(Evaluation[,"X.RUN"]);
 TreatmentNumber<-Treatments[TreatmentNumberIndex]; ##Get the number of treatments in the experiment.
 RunNumber<-(Dimension[1]/TreatmentNumber); ##Get the number of model runs.
 
