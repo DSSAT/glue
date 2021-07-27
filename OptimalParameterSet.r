@@ -17,7 +17,7 @@ OptimalParameterSet<-Optimal["MaxProbability",];
 
 ##2.Change partial cultivar file above with the values of optimal parameter set.
 ## This cultivar then can be chosen by model users to do future simulations. It requires model
-## users to copy this cultivar to replace the corresponding cultivar in the genotype file under "DSSAT047/Genotype".
+## users to copy this cultivar to replace the corresponding cultivar in the genotype file under "DSSAT048/Genotype".
 
 eval(parse(text=paste('GenotypeFilePath="',OD,'/',GenotypeFileName,'.CUL"',sep = '')));
 GenotypeFile<-readLines(GenotypeFilePath, n=-1);

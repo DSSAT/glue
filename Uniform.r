@@ -29,7 +29,7 @@ if (GLUEFlag==1)
 {
   if (RoundOfGLUE==1)
   {
-    if (Flag=="D")
+    if (Flag=="P")
     {
      Minimum=as.numeric(as.character(CulData[1,colNo]))
      Maximum=as.numeric(as.character(CulData[2,colNo]))
@@ -52,7 +52,7 @@ if (GLUEFlag==1)
     {
      Minimum=as.numeric(DefaultValue[i])
      Maximum=as.numeric(DefaultValue[i])
-    } else if (Flag=="D")
+    } else if (Flag=="P")
     {
      Minimum=MaximumProbability[i];
      Maximum=MaximumProbability[i];
@@ -60,7 +60,7 @@ if (GLUEFlag==1)
   }
 } else if (GLUEFlag==2)
 {
-    if (Flag=="D")
+    if (Flag=="P")
     {
     Minimum=as.numeric(as.character(CulData[1,colNo]))
     Maximum=as.numeric(as.character(CulData[2,colNo]))
@@ -68,7 +68,7 @@ if (GLUEFlag==1)
     {
     Minimum=as.numeric(DefaultValue[i])
     Maximum=as.numeric(DefaultValue[i])
-    } else if (Flag=="D")
+    } else if (Flag=="P")
     {
     Minimum=as.numeric(DefaultValue[i])
     Maximum=as.numeric(DefaultValue[i])
@@ -79,7 +79,7 @@ if (GLUEFlag==1)
     {
      Minimum=as.numeric(DefaultValue[i])
      Maximum=as.numeric(DefaultValue[i])
-    } else if (Flag=="D")
+    } else if (Flag=="P")
     {
      Minimum=as.numeric(DefaultValue[i])
      Maximum=as.numeric(DefaultValue[i])
