@@ -222,14 +222,13 @@ write(c("Parameter property:",CulFile ), file = ModelRunIndicatorPath, append = 
 
 # convert text to dataframe
 CulFile.df = paste0(substr(CulFile,1,6), substr(CulFile,30,nchar(CulFile)[1]))
-header = unlist(strsplit(CulFile.df[2]," "))
-header = header[-which(nchar(header)<1)]
+header = unlist(strsplit(CulFile.df[2],split="(\\s|\\|)+"))
+header = header[which(nchar(header)>0)]
 CulData = read.table(textConnection(CulFile.df[-c(1,2)]),header=F)
 colnames(CulData) = header
 
-Cali = unlist(strsplit(CulFile[1],"                "))
-
-Cali.reshape = paste(Cali[1],"placeholder",Cali[2],sep = " ")
+Cali = unlist(strsplit(CulFile[1],"\\s+"))
+Cali.reshape = paste(c(Cali[1],"placeholder", Cali[2:length(Cali)]), sep=" ", collapse = " ")
 Cali.df = read.table(textConnection(Cali.reshape),header = F)
 colnames(Cali.df) = header
 CulData = rbind(CulData,Cali.df)
