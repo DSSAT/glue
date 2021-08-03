@@ -30,6 +30,8 @@ OD<-paste(DSSATD, OutputD, sep="");
 GD<-paste(DSSATD, GenotypeD, sep="");
 
 eval(parse(text=paste("ModelRunIndicatorPath='",OD,"/ModelRunIndicator.txt'",sep = ''))); 
+glueWarningLogFile <- file.path(OD, "GlueWarning.txt");
+glueExcludedModelListFile <- file.path(WD, "GlueExcludedModels.csv");
 ##Path of the model run indicator file, which indicates which component of GLUE is finished so far.
 
 
@@ -114,6 +116,17 @@ LineNo = grep(paste0("M",CropName),DSSATPro)
 LineSplit = unlist(strsplit(DSSATPro[LineNo]," "))
 ModelSelect = LineSplit[length(LineSplit)]
 write(c("Model Name =",ModelSelect), file = ModelRunIndicatorPath, ncolumns=2, append = T);
+
+# Check is model is in the exclusion list
+eval(parse(text=paste("excludedFile<-readLines('",glueExcludedModelListFile,"',n=-1)",sep = '')));
+excludedFile.df <- read.table(textConnection(excludedFile[-c(1,2)]),header=F, sep=",")
+colnames(excludedFile.df) <- unlist(strsplit(sub("@", "", excludedFile[2]), split = ","))
+if (substr(ModelSelect,1,5) %in% excludedFile.df[,"MODEL"]) {
+  errorMsg <- paste0("Currently model ", ModelSelect, " is not supported by GLUE, please modify the DSSAT048.PRO file to change to other model for crop ", CropName, ".")
+  write(errorMsg, file = glueWarningLogFile, ncolumns=1, append = T);
+  # stop(errorMsg)
+  q()
+}
 
 # Get the genotype file name
 GenotypeFilePath<-GD;
