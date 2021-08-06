@@ -93,18 +93,18 @@ R<-RunNumber;#Get what parameter set will be used to change the genotype file.
 #   substr(OldLine, ValuePosition1, ValuePosition2)<-ParameterFormat;
 #   
 #  }
-
-  GenotypeFile[LineNumber]<-OldLine;#Replace the old line with new generated line in the Genotype file.
-  
-  eval(parse(text=paste('ECOFilePath="',GD,'/SCCAN048.ECO"',sep = '')));
-  ReadLine<-readLines(ECOFilePath, n=-1)
-  ECOFile<-as.character(ReadLine);
-  #Get the ECO file from the Genotype directory.
-  
-  eval(parse(text=paste("NewECOFilePath='",OD,"/SCCAN048.ECO'",sep = '')));
-  write(ECOFile, file=NewECOFilePath);
-  #Save the ECO file in the GLWork directory. 
-}
+# 
+#   GenotypeFile[LineNumber]<-OldLine;#Replace the old line with new generated line in the Genotype file.
+#   
+#   eval(parse(text=paste('ECOFilePath="',GD,'/SCCAN048.ECO"',sep = '')));
+#   ReadLine<-readLines(ECOFilePath, n=-1)
+#   ECOFile<-as.character(ReadLine);
+#   #Get the ECO file from the Genotype directory.
+#   
+#   eval(parse(text=paste("NewECOFilePath='",OD,"/SCCAN048.ECO'",sep = '')));
+#   write(ECOFile, file=NewECOFilePath);
+#   #Save the ECO file in the GLWork directory. 
+# }
                                                    
 eval(parse(text=paste("NewGenotypeFilePath='",OD,"/",GenotypeFileName,".CUL'",sep = '')));
 write(GenotypeFile, file=NewGenotypeFilePath);
