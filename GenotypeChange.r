@@ -12,8 +12,8 @@ OldLine<-GenotypeFile[LineNumber];#Get the line according to the line number.
 
 R<-RunNumber;#Get what parameter set will be used to change the genotype file.
 
-if (CropName != "SC")
-{
+# if (CropName != "SC")
+# {
   ParameterStep<-6;
   ValuePosition1<-(38-ParameterStep);
   ValuePosition2<-(42-ParameterStep);
@@ -52,47 +52,47 @@ if (CropName != "SC")
   }
 
   GenotypeFile[LineNumber]<-OldLine;#Replace the old line with new generated line in the Genotype file.
-} else
-{
-  ParameterStep<-15;
-
-  #chp modified
-  ValuePosition1<-(47-ParameterStep); #The initial starting point was 42, but it was changed to 46 since "EXPNO" was added by Cheryl recently.
-  ValuePosition2<-(61-ParameterStep); #The initial ending point was 47, but it is 51 now.
-
-  for (i in 1:TotalParameterNumber)
-  {
-  ValuePosition1<-ValuePosition1+ParameterStep;
-  ValuePosition2<-ValuePosition2+ParameterStep;
-
-  eval(parse(text = paste("Parameter<-RandomMatrix[R,",i,"]",sep = '')));
-
-  if(Parameter>=0 & Parameter<10)
-  {
-  ParameterFormat<-sprintf('%1.3f', Parameter);
-  } else if (Parameter>=10 & Parameter<100)
-  {
-  ParameterFormat<-sprintf('%2.2f', Parameter);
-  
-  # chp added extra format statement for values between 100 and 1000
-  } else if (Parameter>=100 & Parameter<1000)
-  {
-  ParameterFormat<-sprintf('%3.1f', Parameter);
-  } else
-  
-  # chp - how to get format xxxx. (with nothing past the ".") ?
-  {
-  ParameterFormat<-sprintf('%4.0f', Parameter);
-  }
-
-  ##chp
-  #print(ParameterFormat);
-  #print (" ");
-  
-  substr(OldLine, ValuePosition1, ValuePosition2)<-'      ';# Delete initial values.
-  substr(OldLine, ValuePosition1, ValuePosition2)<-ParameterFormat;
-  
- }
+# } else
+# {
+#   ParameterStep<-15;
+# 
+#   #chp modified
+#   ValuePosition1<-(47-ParameterStep); #The initial starting point was 42, but it was changed to 46 since "EXPNO" was added by Cheryl recently.
+#   ValuePosition2<-(61-ParameterStep); #The initial ending point was 47, but it is 51 now.
+# 
+#   for (i in 1:TotalParameterNumber)
+#   {
+#   ValuePosition1<-ValuePosition1+ParameterStep;
+#   ValuePosition2<-ValuePosition2+ParameterStep;
+# 
+#   eval(parse(text = paste("Parameter<-RandomMatrix[R,",i,"]",sep = '')));
+# 
+#   if(Parameter>=0 & Parameter<10)
+#   {
+#   ParameterFormat<-sprintf('%1.3f', Parameter);
+#   } else if (Parameter>=10 & Parameter<100)
+#   {
+#   ParameterFormat<-sprintf('%2.2f', Parameter);
+#   
+#   # chp added extra format statement for values between 100 and 1000
+#   } else if (Parameter>=100 & Parameter<1000)
+#   {
+#   ParameterFormat<-sprintf('%3.1f', Parameter);
+#   } else
+#   
+#   # chp - how to get format xxxx. (with nothing past the ".") ?
+#   {
+#   ParameterFormat<-sprintf('%4.0f', Parameter);
+#   }
+# 
+#   ##chp
+#   #print(ParameterFormat);
+#   #print (" ");
+#   
+#   substr(OldLine, ValuePosition1, ValuePosition2)<-'      ';# Delete initial values.
+#   substr(OldLine, ValuePosition1, ValuePosition2)<-ParameterFormat;
+#   
+#  }
 
   GenotypeFile[LineNumber]<-OldLine;#Replace the old line with new generated line in the Genotype file.
   
