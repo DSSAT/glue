@@ -166,7 +166,7 @@ LineNo.title = grep("@VAR#",CulFile)[1]
 LineNo.min = grep("999991 MINIMA",CulFile)
 LineNo.max = grep("999992 MAXIMA",CulFile)
 LineNo.cal = grep("!Calibration",CulFile)
-Lineno.thiscul = grep(CultivarID,CulFile)
+Lineno.thiscul = grep(paste0("^",CultivarID),CulFile)
 
 LineNo.all = c(LineNo.cal[1],LineNo.title,LineNo.min,LineNo.max,Lineno.thiscul)
 
