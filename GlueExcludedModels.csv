@@ -1,0 +1,11 @@
+*Simulation/Crop Models,,
+@MODEL,CROP,Description
+PRFRM,PO,FORAGE-Perennial peanut
+SCCAN,SC,CANEGRO-Sugarcane
+SCCSP,SC,CASUPRO-Sugarcane
+SCSAM,SC,SAMUCA-Sugarcane
+PRFRM,BM,FORAGE-Bermudagrass
+PRFRM,BR,FORAGE-Brachiaria
+PRFRM,BH,FORAGE-Bahiagrass
+PRFRM,AL,FORAGE-Alfalfa
+SUOIL,SU,OILCROP-Sunflower
