@@ -232,7 +232,7 @@ Cali = unlist(strsplit(CulFile[1],"\\s+"))
 Cali.reshape = paste(c(Cali[1],"placeholder", Cali[2:length(Cali)]), sep=" ", collapse = " ")
 Cali.df = read.table(textConnection(Cali.reshape),header = F)
 colnames(Cali.df) = header
-Cali.df = Cali.df[1:length(colnames(header))]
+Cali.df = Cali.df[1:length(header)]
 CulData = rbind(CulData,Cali.df)
 
 ncol.predefined = which(header=="ECO#")
