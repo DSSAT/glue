@@ -156,7 +156,7 @@ BatchFileSetUp(WD, OD, CultivarBatchFile);
 write(c("DSSAT batch file =",CultivarBatchFile), file = ModelRunIndicatorPath, ncolumns=2, append = T);
 
 ## (7) Get the parameter property file (miminum, maximum, and flg values) and the number of parameters.
-CulFile.origin= readLines(paste0(GD,"/",GenotypeFileName,".CUL"))
+CulFile.origin= readLines(paste0(GD,"/",GenotypeFileName,".CUL"), encoding="UTF-8")
 caliLine = CulFile.origin[which(substr(CulFile.origin,1,12) == "!Calibration")]
 CulFile = CulFile.origin[-which(substr(CulFile.origin,1,1) == "!")] #ignore lines starting with !
 CulFile = c(CulFile,caliLine)
