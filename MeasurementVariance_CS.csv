@@ -7,4 +7,3 @@ B4DAP,3,9,,1,Branch 4 date (dap)
 HWAM,,,0.3,2,Yield at harvest maturity (kg [dm]/ha). 
 CWAM,,,0.3,2,Tops weight at maturity (kg [dm]/ha).  
 LAIX,,,0.4,2,"Leaf area index, maximum."
-HWUM,,,0.3,2,Grain unit weight at maturity (g/seed)
