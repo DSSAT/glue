@@ -122,7 +122,7 @@ eval(parse(text=paste("excludedFile<-readLines('",glueExcludedModelListFile,"',n
 excludedFile.df <- read.table(textConnection(excludedFile[-c(1,2)]),header=F, sep=",")
 colnames(excludedFile.df) <- unlist(strsplit(sub("@", "", excludedFile[2]), split = ","))
 if (CropName %in% excludedFile.df[which(substr(ModelSelect,1,5) == excludedFile.df[,"MODEL"]),][,"CROP"]) {
-  errorMsg <- paste0("Currently model ", ModelSelect, " for ", CropName, " is not supported by GLUE, please modify the DSSATPRO.v48 file to change to other model for crop ", CropName, ".")
+  errorMsg <- paste0("Currently model ", ModelSelect, " for ", CropName, " is not supported by GLUE.")
   write(errorMsg, file = glueWarningLogFile, ncolumns=1, append = T);
   # stop(errorMsg)
   q()
