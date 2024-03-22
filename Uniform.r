@@ -68,7 +68,7 @@ if (GLUEFlag==1)
     {
     Minimum=as.numeric(DefaultValue[i])
     Maximum=as.numeric(DefaultValue[i])
-    } else if (Flag=="P")
+    } else if (Flag=="G")
     {
     Minimum=as.numeric(DefaultValue[i])
     Maximum=as.numeric(DefaultValue[i])
