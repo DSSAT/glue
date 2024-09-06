@@ -1,3 +1,11 @@
-Time,Value
-NumberOfModelRun,10
-GLUEFlag,1
+Variable,Value
+CultivarBatchFile,NEWTON.WHC
+ModelID,CSCRP048
+EcotypeCalibration,N
+GLUED,C:/DSSAT48/Tools/GLUE
+OutputD,C:/DSSAT48/GLWork
+DSSATD,C:/DSSAT48
+GLUEFlag,2
+NumberOfModelRun,3
+Cores,3
+GenotypeD,C:/DSSAT48/Genotype

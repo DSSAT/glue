@@ -1,0 +1,85 @@
+$SIMULATION_CONTROLS
+
+! A control number (CTRNO) > 0 specifies the set of controls that will be 
+! used to override the simulation controls specified in the experiment file.
+
+!-----------------------------------------------------------------------------------------
+*CONTROLS_SWITCH
+@CTRNO DESCRIPTION  
+    97 Controls for cultivar calibration using GLUE
+
+*CONTROLS
+!-----------------------------------------------------------------------------------------
+@N CONTROLS_TITLE
+97 GLUE cultivar calibration controls 
+@N GENERAL     NYERS NREPS START SDATE RSEED SNAME.................... MODEL...
+97 GE              .     .     .     .     .                           GLUEModel
+@N OPTIONS     WATER NITRO SYMBI PHOSP POTAS DISES  CHEM  TILL   CO2
+97 OP              .     .     .     .     .     .     .     .     .
+@N METHODS     WTHER INCON LIGHT EVAPO INFIL PHOTO HYDRO NSWIT MESOM MESEV MESOL METMP MEGHG
+97 ME              .     .     .     .     .     .     .     .     .     .     .     .     .
+@N MANAGEMENT  PLANT IRRIG FERTI RESID HARVS
+97 MA              .     .     .     .     .
+@N OUTPUTS     FNAME OVVEW SUMRY FROPT GROUT CAOUT WAOUT NIOUT MIOUT DIOUT VBOSE CHOUT OPOUT FMOPT
+97 OU              .     .     .     .     .     .     .     .     .     .     0     .     .     .
+
+!Definitions:
+
+!GENERAL
+! NYERS  Number of years this simulation
+! NREPS  Number of replicates (for generated weather)
+! SDATE  Start date for simulation
+! RSEED  Random number seed (for generated weather)
+! SNAME  Simulation name
+! MODEL  Crop model (e.g., MZCER046 or MZIXM046)
+
+!OPTIONS
+! WATER   Water balance and stresses simulation switch (Y=yes, N=no) 
+! NITRO   N balance and stresses simulation switch (Y=yes, N=no)
+! SYMBI   Symbiosis, N fixation simulation switch (Y=yes, N=no)
+! PHOSP   P balance and stresses simulation switch (Y=yes, N=no)
+! POTAS   K balance and stresses simulation switch (Y=yes, N=no)
+! DISES   Disease & pests simulation switch (Y=yes, N=no)
+! CHEM    Chemical applications simulation switch (not currently functional)(Y=yes, N=no)
+! TILL    Tillage events simulation switch (Y=yes, N=no)
+! CO2     CO2 data source (D = use static CO2 value from CO2046.WDA file, M = Use time series 
+!           from CO2046.WDA file, W = read from weather file header)  
+
+!METHODS
+! WTHER   Weather data source (M=measured,G=generated,S=Simmeteo,W=Wthgen)
+! INCON   Initial conditions switch (not currently used) (M=as reported, S=from previous run) 
+! LIGHT   Y=yes,N=no (not implemented)
+! EVAPO   Method of potential evapotranspiration (R=Priestley-Taylor,P=Penman FAO-24,
+!           F=FAO-56,D=Dynamic FAO-56,Z=Hourly energy balance)
+! INFIL   Mulch effects switch (R,S=SCS runoff with mulch effects, N=no mulch effects)
+! PHOTO   Photosynthesis method (C=canopy response, R=radiation use efficiency, L=leaf photosynthesis)
+! HYDRO   Hydrology method (R=Ritchie)
+! NSWIT   Nitrogen switch (experimental)
+! MESOM   Organic matter model (G=Godwin/Ceres, P=Parton/CENTURY)
+! MESEV   Soil evaporation method (S=Suleiman-Ritchie, R=Ritchie)
+! MESOL   Soil layer distribution (1=DSSAT layers, 2=no interpolation, 3=user defined)
+
+!MANAGEMENT
+! PLANT   Planting input (A=automatic planting, R=on reported date)
+! IRRIG   Irrigation input (N=no irrigation, R=reported dates, D=reported DAP, A=automatic, 
+!           F=automatic w/ fixed amounts)
+! FERTI   Fertilizer input (N=no fertilizer, R=reported dates, D=reported DAP, A=automatic
+!           F=automatic w/ fixed amounts)
+! RESID   Organic matter application (N=no residues, R=reported dates, D=reported DAP)
+! HARVS   Harvest (M=at maturity, R=reported dates, D=reported DAP, G=at specified growth stage, A=automatic)
+
+!OUTPUTS
+! FNAME   N=use defaults,Text=replacement name for output files
+! OVVEW   Overview.OUT (Y or N or E=Evaluate, but no Overview file)
+! SUMRY   Summary.OUT (Y or N)
+! FROPT   Frequency of output (days)
+! GROUT   Plant growth output (Y or N)
+! CAOUT   Carbon output (Y or N)
+! WAOUT   Water output (Y or N)
+! NIOUT   Nitrogen output (Y or N)
+! MIOUT   Phosphorus output (Y or N)
+! DIOUT   Pest and disease output (Y or N)
+! VBOSE   Verbosity (0=Summary.OUT only, N=minimal output, Y=normal output, D=detailed output)
+! CHOUT   Chemical output (not currently active (Y or N)
+! OPOUT   Management operations output (Y or N)
+! FMOPT   Output format (A=ASCII, C=CSV)

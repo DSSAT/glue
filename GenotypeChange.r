@@ -1,6 +1,6 @@
 #Change the genotype file of crops in DSSAT.
 
-GenotypeChange<-function(GD, DSSATD, OD, CropName, GenotypeFileName, CultivarID, TotalParameterNumber, RunNumber, RandomMatrix)
+GenotypeChange<-function(GD, DSSATD, OD, CropName, GenotypeFileName, CultivarID, TotalParameterNumber, RunNumber, RandomMatrix, EcotypeID, EcotypeParameters)
 {
 eval(parse(text=paste('GenotypeFilePath="',GD,'/',GenotypeFileName,'.CUL"',sep = '')));
 
@@ -12,11 +12,24 @@ OldLine<-GenotypeFile[LineNumber];#Get the line according to the line number.
 
 R<-RunNumber;#Get what parameter set will be used to change the genotype file.
 
+#check if ecotype is also being calibrated
+if(EcotypeParameters > 0){
+  eval(parse(text=paste('EcotypeFilePath="',GD,'/',GenotypeFileName,'.ECO"',sep = '')));
+
+  EcoReadLine<-readLines(EcotypeFilePath, n=-1)
+  EcotypeFile<-as.character(EcoReadLine); #Get the genotype file saved as a template.
+  EcoLineNumber<-grep(pattern=EcotypeID, EcotypeFile);
+  EcoOldLine<-EcotypeFile[EcoLineNumber];
+}
+
 # if (CropName != "SC")
 # {
   ParameterStep<-6;
   ValuePosition1<-(38-ParameterStep);
   ValuePosition2<-(42-ParameterStep);
+  
+  EcoValuePosition1 <- (26-ParameterStep);
+  EcoValuePosition2 <- (30-ParameterStep);
 
   for (i in 1:TotalParameterNumber)
   {
@@ -48,10 +61,23 @@ R<-RunNumber;#Get what parameter set will be used to change the genotype file.
   ParameterFormat<-sprintf('%3.1f', Parameter);
   }
 
-  substr(OldLine, ValuePosition1, ValuePosition2)<-ParameterFormat;
+  if(EcotypeParameters > 0 & i > (TotalParameterNumber - EcotypeParameters)){ #Write on .ECO file
+    EcoValuePosition1 <- EcoValuePosition1+ParameterStep;
+    EcoValuePosition2 <- EcoValuePosition2+ParameterStep;
+    substr(EcoOldLine, EcoValuePosition1, EcoValuePosition2)<-ParameterFormat;
+  }else{ #Write on .CUL file
+    substr(OldLine, ValuePosition1, ValuePosition2)<-ParameterFormat;
+  }  
+  }
+  GenotypeFile[LineNumber]<-OldLine;#Replace the old line with new generated line in the Genotype file.
+
+  if(EcotypeParameters > 0){
+    EcotypeFile[EcoLineNumber]<-EcoOldLine;#Replace the old line with new generated line in the Ecotype file.
+    eval(parse(text=paste("NewEcotypeFilePath='",OD,"/",GenotypeFileName,".ECO'",sep = '')));
+    write(EcotypeFile, file=NewEcotypeFilePath);
+    #Save the new genotype file as "eco" file in the GLWork directory.
   }
 
-  GenotypeFile[LineNumber]<-OldLine;#Replace the old line with new generated line in the Genotype file.
 # } else
 # {
 #   ParameterStep<-15;

@@ -4,7 +4,22 @@ IntegratedLikelihoodCalculation2<-function (WD, OD, CropName)
 {
 
 ##Step 1. Get the information of integrated measurements from the processed evaluation file or File A.
-eval(parse(text=paste('Evaluation<-read.table("',OD,'/EvaluateFrame_2.txt", header=TRUE,comment.char="")',sep = '')));
+eval(parse(text=paste('Evaluation<-read.table("',OD,'/EvaluateFrame_2.txt", header=TRUE, fill=TRUE, comment.char="")',sep = '')));
+
+#RowsWithNA <- nrow(Evaluation[rowSums(is.na(Evaluation)) > 0,])
+#
+#if(RowsWithNA>0)
+#{
+#  Evaluation <- na.omit(Evaluation)
+#  write(paste0("Number of rows containing NAs removed from EvaluateFrame file: ", RowsWithNA, 
+#         ". Rows removed can be found in NARowsRemovedLines.txt..."), file = paste0(OD,"/ModelRunIndicator.txt"), append = T);
+#  write(paste0(colnames(Evaluation), collapse = ' '), file = paste0(OD,"/NARowsRemovedLines.txt")); 
+#  write(apply(Evaluation,1,paste0, collapse=' '), file = paste0(OD,"/NARowsRemovedLines.txt"), append = T); 
+#}
+#else{
+#  write("No NAs found in EvaluateFrame file...", file = paste0(OD,"/ModelRunIndicator.txt"), append = T); 
+#}
+
 #print(Evaluation);
 Dimension<-dim(Evaluation);
 
@@ -48,7 +63,7 @@ RowNames<-rownames(VAR);
 
 NumberOfMeasurement<-dim(VAR)[1];
 
-if (CropName=="BA" || CropName=="RI" || CropName=="WH")
+if (CropName=="BA" || CropName=="RI" || CropName=="WH" || CropName=="TF")
 {
 VAR["PD1T","Flag"]<-0;
 VAR["PWAM","Flag"]<-0;
