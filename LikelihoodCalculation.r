@@ -53,6 +53,7 @@ for (i in 1:TreatmentNumber)
 }
 
 Probability<-CombinedProbability/sum(CombinedProbability);
+
 #Calculate the normalized probability values for each of the random parameter sets.
 
 # Step 4. Combine the generated random parameter sets and the final normalized probability together.
@@ -78,9 +79,9 @@ eval(parse(text=paste('write.table(as.matrix(RandomParameterSets), file ="',OD,
 eval(parse(text=paste('RandomParameterSets<-read.table("',OD,
 '/RealRandomSets_2.txt", header=FALSE, comment.char="")',sep="")));
 colnames(RandomParameterSets)<-ParameterNames;
+
 RandomParameterSets<-cbind(RandomParameterSets,Probability);
 #Read the generated radom parameter sets and assign names to them.
-
 #library ('MASS');
 #eval(parse(text=paste('write.matrix(RandomParameterSets,file ="',OD,
 #'/RandomParameterSetsAndProbability_2.txt")',sep="")));

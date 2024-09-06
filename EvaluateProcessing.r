@@ -16,7 +16,7 @@ FrameData<-c();
 TreatmentNumber<-(FileLength-TitleLine);##Get the number of treatments.
 #print(TreatmentNumber);
 
-SummaryFrame<-data.frame()
+#SummaryFrame<-data.frame()
 
 for (j in 1:TreatmentNumber)
 {
@@ -24,7 +24,10 @@ for (j in 1:TreatmentNumber)
   FrameData=rbind(FrameData,File[n]);##Combine the results in one matrix.
 }
 
-if(ModelRunNumber!=1)
+#The if statement had to change because it was only writing the evaluate header 
+# during the first model run -- this does not work in this parallelized version
+#if(ModelRunNumber!=1)
+if(file.exists(paste0(OD,'/EvaluateFrame_',RoundOfGLUE,'.txt')))
 {
   EvaluateFrame<-FrameData;
   eval(parse(text = paste('write(EvaluateFrame, "',OD,'/EvaluateFrame_',
