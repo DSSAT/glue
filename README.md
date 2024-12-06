@@ -85,4 +85,8 @@ Contributions are always welcome via "Issues" in the [issue-board][link2].
 [contactlink2]: <https://github.com/vshelia>
 [contactlink3]: <https://github.com/GerritHoogenboom>
 
+---
 
+### Cite the software
+
+Ferreira, T. B., V. Shelia, C. Porter, P. M. Cadena, M. S. Cortasa, M. S. Khan, W. Pavan, G. Hoogenboom. 2024. Enhancing crop model parameter estimation across computing environments: Utilizing the GLUE method and parallel computing for determining genetic coefficients. Computers and Electronics in Agriculture, 227, 109513 (https://doi.org/10.1016/j.compag.2024.109513).
