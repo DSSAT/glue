@@ -356,7 +356,16 @@ if(EcotypeCalibration == "Y"){
   CulData[nrow(CulData)+1,] <- "Cultivar"
   EcoData[nrow(EcoData)+1,] <- "Ecotype"
   
-  DataColumns <- cbind(CulData, EcoData[-1]) #remove Ecotype first line and merge
+  #remove non-parameter columns from ecoytpe (., MG, TM)
+  cols_to_remove <- c(".","MG", "TM")
+  existing_cols <- cols_to_remove[cols_to_remove %in% colnames(EcoData)]
+  if(length(existing_cols) > 0) {
+    EcoData <- EcoData[, !(colnames(EcoData) %in% existing_cols), drop = FALSE]
+    Eco.ParameterNames <- Eco.ParameterNames[!(Eco.ParameterNames %in% existing_cols)]
+    Eco.TotalParameterNumber <- length(Eco.ParameterNames)
+  }
+  
+  DataColumns <- cbind(CulData, EcoData)
   TotalParameterNumber <- Cul.TotalParameterNumber + Eco.TotalParameterNumber
   ParameterNames <- c(Cul.ParameterNames, Eco.ParameterNames)
   EcotypeID <- EcotypeID

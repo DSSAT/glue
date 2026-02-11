@@ -31,7 +31,7 @@ RunNumber<-(Dimension[1]/TreatmentNumber); ##Get the number of model runs.
 ## Step 2. Get the information about measurement variance from a given Excel file.
 #library(xlsReadWrite);
 
-if (CropName=="PT" || CropName=="SC" || CropName=="CS" || CropName=="TN" || CropName=="TR" || CropName=="WH" || CropName=="PI")
+if (CropName=="PT" || CropName=="SC" || CropName=="CS" || CropName=="TN" || CropName=="TR" || CropName=="WH" || CropName=="PI" || CropName=="RY")
 {
 #  eval(parse(text=paste('VAR<-read.xls("',WD,
 #  '/MeasurementVariance.xls", sheet = "',CropName,'", rowNames = T, colNames=T)',sep = '')));
@@ -62,7 +62,7 @@ RowNames<-rownames(VAR);
 
 NumberOfMeasurement<-dim(VAR)[1];
 
-if (CropName=="BA" || CropName=="RI" || CropName=="WH" || CropName=="TF")
+if (CropName=="BA" || CropName=="RI" || CropName=="WH" || CropName=="TF" || CropName=="RY")
 {
   VAR["PD1T","Flag"]<-0;
   VAR["PWAM","Flag"]<-0;
