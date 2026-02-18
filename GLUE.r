@@ -333,7 +333,11 @@ if(EcotypeCalibration == "Y"){
   write(c("Ecotype Parameter property:",EcoFile ), file = ModelRunIndicatorPath, append = T);
   
   # convert text to dataframe
-  EcoFile.df = paste0(substr(EcoFile,1,6), substr(EcoFile,24,nchar(EcoFile)[1]))
+  EcoFile.df = paste0(substr(EcoFile,1,6), substr(EcoFile,25,nchar(EcoFile)[1]))
+  if (grepl("@ECO#\\s+\\.", EcoFile.df[2])) {
+    errorMsg <- "Invalid ecotype header: found additional '.' after @ECO#. Adjust it to continue."
+    return(NULL)
+  }
   Eco.Header = unlist(strsplit(EcoFile.df[2],split="(\\s|\\|)+"))
   Eco.Header = Eco.Header[which(nchar(Eco.Header)>0)]
   EcoData = read.table(textConnection(EcoFile.df[-c(1,2)]),header=F)
