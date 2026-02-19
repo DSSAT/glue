@@ -30,12 +30,14 @@ CultivarAddress<-grep(pattern=CultivarID, GenotypeFile);
 OldLine<-GenotypeFile[CultivarAddress];
 #Get the line according to the line number.
 
+EcoCROPGROformat <- 0
 if(EcotypeParameters > 0){
   eval(parse(text=paste('EcotypeFilePath="',GD,'/',GenotypeFileName,'.ECO"',sep = '')));
   EcotypeFile<-readLines(EcotypeFilePath, n=-1)
   EcotypeID<-paste("^",EcotypeID, sep='');
   EcotypeAddress<-grep(pattern=EcotypeID, EcotypeFile);
   EcoOldLine<-EcotypeFile[EcotypeAddress];
+  EcoCROPGROformat <- grep(pattern="MG TM", EcotypeFile);
 }
 
 if(CropName != "SC")
@@ -45,8 +47,13 @@ if(CropName != "SC")
   ValuePosition2<-(42-Step);
   #Set the starting and end points of parameter locations.
 
-  EcoValuePosition1 <- (26-Step);
-  EcoValuePosition2 <- (30-Step);
+  if(EcoCROPGROformat > 0){
+    EcoValuePosition1 <- (32-Step);
+    EcoValuePosition2 <- (36-Step);  
+  }else{
+    EcoValuePosition1 <- (26-Step);
+    EcoValuePosition2 <- (30-Step);
+  }
 
   for (i in 1:TotalParameterNumber)
   {
