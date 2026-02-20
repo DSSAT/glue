@@ -30,7 +30,7 @@ if(EcotypeParameters > 0){
   ValuePosition1<-(38-ParameterStep);
   ValuePosition2<-(42-ParameterStep);
   
-  if(EcoCROPGROformat > 0){
+  if(length(EcoCROPGROformat) > 0){
     EcoValuePosition1 <- (32-ParameterStep);
     EcoValuePosition2 <- (36-ParameterStep);  
   }else{

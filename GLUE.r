@@ -345,20 +345,22 @@ if(EcotypeCalibration == "Y"){
   colnames(EcoData) = Eco.Header
   
   Eco.Cali = unlist(strsplit(EcoFile[1],"\\s+"))
-  Eco.Cali.reshape = paste(c(Eco.Cali[1],"placeholder", Eco.Cali[2:length(Eco.Cali)]), sep=" ", collapse = " ")
   cols_to_placeholder <- c("MG", "TM")
-  existing_cols <- cols_to_placeholder[cols_to_placeholder %in% Eco.Header]
-  if (length(existing_cols) > 0) {
+  existing_cols_file <- cols_to_placeholder[cols_to_placeholder %in% Eco.Header]
+  if (length(existing_cols_file) > 0) {
     Eco.Cali.reshape = paste(c(Eco.Cali[1],"placeholder placeholder", Eco.Cali[4:length(Eco.Cali)]), sep=" ", collapse = " ")
+  }else{
+    Eco.Cali.reshape = paste(c(Eco.Cali[1], Eco.Cali[2:length(Eco.Cali)]), sep=" ", collapse = " ")
   }
   Eco.Cali.df = read.table(textConnection(Eco.Cali.reshape),header = F)
   colnames(Eco.Cali.df) = Eco.Header
   Eco.Cali.df = Eco.Cali.df[1:length(Eco.Header)]
   EcoData = rbind(EcoData,Eco.Cali.df)
   
-  Eco.ncol.predefined = which(Eco.Header=="@ECO#")
-  if (length(existing_cols) > 0) {
+  if (length(existing_cols_file) > 0) {
     Eco.ncol.predefined = which(Eco.Header=="TM")
+  }else{
+    Eco.ncol.predefined = which(Eco.Header=="@ECO#")
   }
   Eco.TotalParameterNumber = ncol(EcoData) - Eco.ncol.predefined #Get the total number of the parameters.
   Eco.ParameterNames = Eco.Header[-c(1:Eco.ncol.predefined)]

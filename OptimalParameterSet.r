@@ -47,7 +47,7 @@ if(CropName != "SC")
   ValuePosition2<-(42-Step);
   #Set the starting and end points of parameter locations.
 
-  if(EcoCROPGROformat > 0){
+  if(length(EcoCROPGROformat) > 0){
     EcoValuePosition1 <- (32-Step);
     EcoValuePosition2 <- (36-Step);  
   }else{
