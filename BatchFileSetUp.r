@@ -3,11 +3,11 @@
 BatchFileSetUp<-function(WD, OD, CultivarBatchFile)
 {
 eval(parse(text=paste('BatchFilePath="',WD,'/DSSBatch.template"',sep = '')));
-BatchFileTamplate<-readLines(BatchFilePath, n=-1);
+BatchFileTamplate<-suppressWarnings(readLines(BatchFilePath, n=-1));
 #Get the template of the batch file.
 
 eval(parse(text=paste('BatchFilePath="',OD,'/',CultivarBatchFile,'"', sep = '')));
-CultivarBatchFile<-readLines(BatchFilePath, n=-1);
+CultivarBatchFile<-suppressWarnings(readLines(BatchFilePath, n=-1));
 TotalLineNumber<-length(CultivarBatchFile);
 #Get the batch file generated with GenSelect.
 

@@ -146,7 +146,7 @@ write("GLUE will run for growth only.", file = ModelRunIndicatorPath, append = T
 #second round GLUE will be conducted.
 
 ## (5) Get the  name of the genotype file of current crop and the name of current model
-eval(parse(text=paste("BatchFile<-readLines('",OD,CultivarBatchFile,"',n=-1)",sep = '')));
+eval(parse(text=paste("BatchFile<-suppressWarnings(readLines('",OD,CultivarBatchFile,"',n=-1))",sep = '')));
 CropNameAddress<-grep('BATCH', BatchFile);
 CropNameStart<-18; #
 CropNameEnd<-19; #
@@ -233,14 +233,20 @@ CulFile.origin= readLines(paste0(GD,GenotypeFileName,".CUL"))#, encoding="UTF-8"
 
 if(length(grep("999991 MINIMA", CulFile.origin)) == 0){
   errorMsg <- "Lower bound (MINIMA) not specified in the cultivar file. Please correct the file."
+  write(errorMsg, file = glueWarningLogFile, append = T)
+  print(errorMsg)
   return(NULL)
 }
 if(length(grep("999992 MAXIMA", CulFile.origin)) == 0){
   errorMsg <- "Upper bound (MAXIMA) not specified in the cultivar file. Please correct the file."
+  write(errorMsg, file = glueWarningLogFile, append = T)
+  print(errorMsg)
   return(NULL)
 }
 if(length(grep("!Calibration", CulFile.origin)) == 0){
   errorMsg <- "Missing the calibration switches (P/G/N) in the cultivar file. Please correct the file."
+  write(errorMsg, file = glueWarningLogFile, append = T)
+  print(errorMsg)
   return(NULL)
 }
 
@@ -280,9 +286,35 @@ colnames(Cul.Cali.df) = Cul.Header
 Cul.Cali.df = Cul.Cali.df[1:length(Cul.Header)]
 CulData = rbind(CulData,Cul.Cali.df)
 
+# Check column alignment: header count must match data columns
+if(length(Cul.Header) != ncol(CulData)) {
+  errorMsg <- paste0("Cultivar file column mismatch: header has ", length(Cul.Header),
+    " columns but data has ", ncol(CulData), " columns. Check the cultivar file format.")
+  write(errorMsg, file = glueWarningLogFile, append = T)
+  print(errorMsg)
+  return(NULL)
+}
+if(ncol(Cul.Cali.df) != ncol(CulData)) {
+  errorMsg <- paste0("Cultivar file calibration row mismatch: calibration line has ", ncol(Cul.Cali.df),
+    " values but data has ", ncol(CulData), " columns. Check the !Calibration line in the cultivar file.")
+  write(errorMsg, file = glueWarningLogFile, append = T)
+  print(errorMsg)
+  return(NULL)
+}
+
 ncol.predefined = which(Cul.Header=="ECO#")
 Cul.TotalParameterNumber = ncol(CulData) - ncol.predefined #Get the total number of the parameters.
 Cul.ParameterNames = Cul.Header[-c(1:ncol.predefined)]
+
+dotParamsCul <- Cul.ParameterNames[grepl("\\.", Cul.ParameterNames)]
+if (length(dotParamsCul) > 0) {
+  errorMsg <- paste0("Cultivar file: Invalid parameter name(s) containing '.'",
+    ". This might cause issues with the calibration process",
+    ". Check the cultivar file for misaligned columns or malformed headers.")
+  write(errorMsg, file = glueWarningLogFile, append = T)
+  print(errorMsg)
+}
+
 write(c("Cultivar File Parameters =",Cul.ParameterNames), file = ModelRunIndicatorPath, append = T)
 
 
@@ -293,14 +325,20 @@ if(EcotypeCalibration == "Y"){
   
   if(length(grep("999991 MINIMA", Eco.File.origin)) == 0){
     errorMsg <- "Lower bound (MINIMA) not specified in the ecotype file. Please correct the file."
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
     return(NULL)
   }
   if(length(grep("999992 MAXIMA", Eco.File.origin)) == 0){
     errorMsg <- "Upper bound (MAXIMA) not specified in the ecotype file. Please correct the file."
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
     return(NULL)
   }
   if(length(grep("!Calibration", Eco.File.origin)) == 0){
     errorMsg <- "Missing the calibration switches (P/G/N) in the ecotype file. Please correct the file."
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
     return(NULL)
   }
   
@@ -336,6 +374,8 @@ if(EcotypeCalibration == "Y"){
   EcoFile.df = paste0(substr(EcoFile,1,6), substr(EcoFile,25,nchar(EcoFile)[1]))
   if (grepl("@ECO#\\s+\\.", EcoFile.df[2])) {
     errorMsg <- "Invalid ecotype header: found additional '.' after @ECO#. Adjust it to continue."
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
     return(NULL)
   }
   Eco.Header = unlist(strsplit(EcoFile.df[2],split="(\\s|\\|)+"))
@@ -357,6 +397,22 @@ if(EcotypeCalibration == "Y"){
   Eco.Cali.df = Eco.Cali.df[1:length(Eco.Header)]
   EcoData = rbind(EcoData,Eco.Cali.df)
   
+  # Check column alignment: header count must match data columns
+  if(length(Eco.Header) != ncol(EcoData)) {
+    errorMsg <- paste0("Ecotype file column mismatch: header has ", length(Eco.Header),
+      " columns but data has ", ncol(EcoData), " columns. Check the ecotype file format.")
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
+    return(NULL)
+  }
+  if(ncol(Eco.Cali.df) != ncol(EcoData)) {
+    errorMsg <- paste0("Ecotype file calibration row mismatch: calibration line has ", ncol(Eco.Cali.df),
+      " values but data has ", ncol(EcoData), " columns. Check the !Calibration line in the ecotype file.")
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
+    return(NULL)
+  }
+  
   if (length(existing_cols_file) > 0) {
     Eco.ncol.predefined = which(Eco.Header=="TM")
   }else{
@@ -373,6 +429,16 @@ if(EcotypeCalibration == "Y"){
   #remove non-parameter columns from ecoytpe (., MG, TM)
   cols_to_remove <- c(".", "@ECO#", "MG", "TM")
   existing_cols <- cols_to_remove[cols_to_remove %in% colnames(EcoData)]
+
+  dotParamsEco <- Eco.ParameterNames[grepl("\\.", Eco.ParameterNames)]
+  if (length(dotParamsEco) > 0) {
+    errorMsg <- paste0("Ecotype file: Invalid parameter name(s) containing '.'",
+      ". This might cause issues with the calibration process",
+      ". Check the ecotype file for misaligned columns or malformed headers.")
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
+  }  
+
   if(length(existing_cols) > 0) {
     EcoData <- EcoData[, !(colnames(EcoData) %in% existing_cols), drop = FALSE]
     Eco.ParameterNames <- Eco.ParameterNames[!(Eco.ParameterNames %in% existing_cols)]
@@ -391,6 +457,25 @@ if(EcotypeCalibration == "Y"){
   DataColumns <- CulData
   TotalParameterNumber <- Cul.TotalParameterNumber
   ParameterNames <- Cul.ParameterNames
+}
+
+# Check parameter values in DataColumns
+paramCols <- (ncol.predefined + 1):ncol(DataColumns)
+# Rows 1-3 (MINIMA, MAXIMA and cultivarID) are numeric. 
+# Row 4 is calibration flags (P/G/N) and row 5 is origin tag (cultivar/ecotype) — those are expected to be strings.
+for (r in 1:3) {
+  for (pc in paramCols) {
+    val <- DataColumns[r, pc]
+    if (is.na(suppressWarnings(as.numeric(as.character(val))))) {
+      rowLabel <- c("MINIMA", "MAXIMA", "cultivar ID")[r]
+      errorMsg <- paste0("Non-numeric value '", val, "' found on ", rowLabel,
+        ", column '", colnames(DataColumns)[pc],
+        "'. Check the cultivar/ecotype file for misaligned columns.")
+      write(errorMsg, file = glueWarningLogFile, append = T)
+      print(errorMsg)
+      stop(errorMsg)
+    }
+  }
 }
 
 #################Step 2: Begin the GLUE procedure.#################
