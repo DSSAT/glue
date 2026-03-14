@@ -275,7 +275,23 @@ write(c("Parameter property:",CulFile ), file = ModelRunIndicatorPath, append = 
 CulFile.df = paste0(substr(CulFile,1,6), substr(CulFile,30,nchar(CulFile)[1]))
 Cul.Header = unlist(strsplit(CulFile.df[2],split="(\\s|\\|)+"))
 Cul.Header = Cul.Header[which(nchar(Cul.Header)>0)]
-CulData = read.table(textConnection(CulFile.df[-c(1,2)]),header=F)
+
+# Check that all data rows (MINIMA, MAXIMA, cultivar) have the same number of elements as the header
+CulFile.dataLines <- CulFile.df[-c(1,2)]
+for (dl in seq_along(CulFile.dataLines)) {
+  rowTokens <- unlist(strsplit(trimws(CulFile.dataLines[dl]), "\\s+"))
+  rowLabel <- c("MINIMA", "MAXIMA", "cultivar ID")[dl]
+  if (length(rowTokens) != length(Cul.Header)) {
+    errorMsg <- paste0("Cultivar file: ", rowLabel, " row has ", length(rowTokens),
+      " values but the header has ", length(Cul.Header),
+      " columns. Check for missing or extra values in the cultivar file.")
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
+    stop(errorMsg)
+  }
+}
+
+CulData = read.table(textConnection(CulFile.dataLines),header=F)
 Cul.Header = Cul.Header[1:length(colnames(CulData))]
 colnames(CulData) = Cul.Header
 
@@ -380,7 +396,23 @@ if(EcotypeCalibration == "Y"){
   }
   Eco.Header = unlist(strsplit(EcoFile.df[2],split="(\\s|\\|)+"))
   Eco.Header = Eco.Header[which(nchar(Eco.Header)>0)]
-  EcoData = read.table(textConnection(EcoFile.df[-c(1,2)]),header=F)
+
+  # Check that all data rows (MINIMA, MAXIMA, ecotype) have the same number of elements as the header
+  EcoFile.dataLines <- EcoFile.df[-c(1,2)]
+  for (dl in seq_along(EcoFile.dataLines)) {
+    rowTokens <- unlist(strsplit(trimws(EcoFile.dataLines[dl]), "\\s+"))
+    rowLabel <- c("MINIMA", "MAXIMA", "ecotype ID")[dl]
+    if (length(rowTokens) != length(Eco.Header)) {
+      errorMsg <- paste0("Ecotype file: ", rowLabel, " row has ", length(rowTokens),
+        " values but the header has ", length(Eco.Header),
+        " columns. Check for missing or extra values in the ecotype file.")
+      write(errorMsg, file = glueWarningLogFile, append = T)
+      print(errorMsg)
+      stop(errorMsg)
+    }
+  }
+
+  EcoData = read.table(textConnection(EcoFile.dataLines),header=F)
   Eco.Header = Eco.Header[1:length(colnames(EcoData))]
   colnames(EcoData) = Eco.Header
   
