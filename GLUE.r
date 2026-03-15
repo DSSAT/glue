@@ -2,6 +2,9 @@
 time_test <- Sys.time()
 print(paste0("Calibration started at ", time_test))
 
+# DSSAT version suffix ("048" for DSSAT v4.8)
+dssatVersion <- "048"
+
 #list.of.packages <- c("rjson", "parallel")
 list.of.packages <- c("parallel")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -39,6 +42,28 @@ WorkDirectory<-getwd();
 #DSSATD <- GLUE_defs$DSSATD
 
 SimulationControl<-read.csv(paste0(WorkDirectory,'/SimulationControl.csv'), header=T);
+
+# Validate CSV column headers
+requiredCols <- c("Variable", "Value")
+missingCols <- requiredCols[!(requiredCols %in% colnames(SimulationControl))]
+if (length(missingCols) > 0) {
+  errorMsg <- paste0("SimulationControl.csv has invalid column headers. Found: '",
+    paste(colnames(SimulationControl), collapse = "', '"),
+    "'. Expected columns: '", paste(requiredCols, collapse = "', '"), "'.")
+  print(errorMsg)
+  stop(errorMsg)
+}
+
+# Validate CSV row variables
+requiredVars <- c("CultivarBatchFile", "ModelID", "EcotypeCalibration", "GLUED", "OutputD", "DSSATD", "GLUEFlag", "NumberOfModelRun", "Cores", "GenotypeD")
+missingVars <- requiredVars[!(requiredVars %in% SimulationControl$Variable)]
+if (length(missingVars) > 0) {
+  errorMsg <- paste0("SimulationControl.csv is missing required variable(s): ", paste(missingVars, collapse = ", "),
+    ". Expected headers: 'Variable' and 'Value' with rows for: ", paste(requiredVars, collapse = ", "), ".")
+  print(errorMsg)
+  stop(errorMsg)
+}
+
 NumberOfModelRun <- SimulationControl[SimulationControl$Variable == "NumberOfModelRun","Value"]
 GLUEFlag <- SimulationControl[SimulationControl$Variable == "GLUEFlag","Value"]
 CultivarBatchFile <- SimulationControl[SimulationControl$Variable == "CultivarBatchFile","Value"]
@@ -49,6 +74,156 @@ OD<- SimulationControl[SimulationControl$Variable == "OutputD","Value"]
 GD<- SimulationControl[SimulationControl$Variable == "GenotypeD","Value"]
 DSSATD <- SimulationControl[SimulationControl$Variable == "DSSATD","Value"]
 ModelID <- SimulationControl[SimulationControl$Variable == "ModelID","Value"]
+
+glueWarningLogFile <- file.path(OD, "GlueWarning.txt")
+
+# Validate OutputD 
+if (!dir.exists(OD)) {
+  errorMsg <- paste0("Directory for 'OutputD' does not exist: ", OD,
+    ". Please check the path in SimulationControl.csv.")
+  print(errorMsg)
+  stop(errorMsg)
+}
+file.create(glueWarningLogFile)  # overwrite any previous log
+
+# Validate CultivarBatchFile exists in OutputD
+cultivarBatchPath <- file.path(OD, CultivarBatchFile)
+if (!file.exists(cultivarBatchPath)) {
+  errorMsg <- paste0("CultivarBatchFile '", CultivarBatchFile, "' not found in OutputD directory: ", OD,
+    ". Please check the file name in SimulationControl.csv.")
+  print(errorMsg)
+  stop(errorMsg)
+}
+
+# Validate GLUEFlag
+GLUEFlag <- suppressWarnings(as.numeric(GLUEFlag))
+if (is.na(GLUEFlag) || !(GLUEFlag %in% c(1, 2, 3))) {
+  errorMsg <- "Invalid GLUEFlag in SimulationControl.csv. Must be 1 (phenology & growth), 2 (phenology only), or 3 (growth only)."
+  print(errorMsg)
+  stop(errorMsg)
+}
+
+# Validate NumberOfModelRun
+NumberOfModelRun <- suppressWarnings(as.numeric(NumberOfModelRun))
+if (is.na(NumberOfModelRun) || NumberOfModelRun <= 0) {
+  errorMsg <- "Invalid NumberOfModelRun in SimulationControl.csv. Must be a number greater than 0."
+  print(errorMsg)
+  stop(errorMsg)
+}
+
+# Validate Cores
+if (is.na(Cores) || Cores < 1) {
+  if (!is.na(Sys.getenv("SLURM_CPUS_ON_NODE", unset = NA))) {
+    Cores <- as.integer(Sys.getenv("SLURM_CPUS_ON_NODE"))
+  } else {
+    errorMsg <- "Invalid Cores in SimulationControl.csv. Must be a number >= 1."
+    print(errorMsg)
+    stop(errorMsg)
+  }
+}
+
+# Validate EcotypeCalibration
+validEcoOptions <- c("Y", "N")
+if (!(EcotypeCalibration %in% validEcoOptions)) {
+  warningMsg <- paste0("Invalid EcotypeCalibration value '", EcotypeCalibration,
+    "' in SimulationControl.csv. Valid options: ", paste(validEcoOptions, collapse = ", "),
+    ". Defaulting to EcotypeCalibration = 'N'.")
+  print(warningMsg)
+  EcotypeCalibration <- "N"
+}
+
+# Validate directory paths exist
+pathChecks <- list(
+  list(name = "GLUED", path = WD),
+  list(name = "DSSATD", path = DSSATD),
+  list(name = "GenotypeD", path = GD)
+)
+for (x in pathChecks) {
+  if (!dir.exists(x$path)) {
+    errorMsg <- paste0("Directory for '", x$name, "' does not exist: ", x$path,
+      ". Please check the path in SimulationControl.csv.")
+    print(errorMsg)
+    stop(errorMsg)
+  }
+}
+
+# Validate DSSAT executable exists in DSSATD
+dssatFiles <- list.files(DSSATD, full.names = FALSE)
+dssatExeFound <- any(tolower(dssatFiles) %in% c("dscsm048.exe", "dscsm048"))
+if (!dssatExeFound) {
+  errorMsg <- paste0("DSSAT executable not found in DSSATD directory: ", DSSATD, ".")
+  print(errorMsg)
+  stop(errorMsg)
+}
+
+# Validate ModelID against SIMULATION.CDE
+# Search for SIMULATION.CDE in multiple locations
+simCdePath <- NULL
+simCDEpotentialPaths <- c(
+  "C:/DSSAT48/SIMULATION.CDE",
+  file.path(Sys.getenv("DSSAT_HOME"), "SIMULATION.CDE"),
+  file.path(WD, "SIMULATION.CDE"),
+  file.path(DSSATD, "SIMULATION.CDE")
+)
+for (x in simCDEpotentialPaths) {
+  if (nchar(x) > 0 && file.exists(x)) {
+    simCdePath <- x
+    break
+  }
+}
+
+# If SIMULATION.CDE is not found, skip validation
+if (!is.null(simCdePath)) {
+  simCdeLines <- suppressWarnings(readLines(simCdePath))
+  modelSection <- grep("^@MODEL", simCdeLines)
+  if (length(modelSection) > 0) {
+    modelLines <- simCdeLines[(modelSection[1]+1):length(simCdeLines)]
+    modelLines <- modelLines[nchar(trimws(modelLines)) > 0]
+    # Extract model names (cols 1-5) and crop codes (cols 10-11)
+    validModelNames <- trimws(substr(modelLines, 1, 5))
+    validCropCodes <- trimws(substr(modelLines, 10, 11))
+    # ModelID format is MODEL(5 chars) + VERSION(3 chars), e.g. CRGRO048
+    modelName <- substr(ModelID, 1, 5)
+    modelVersion <- substr(ModelID, 6, 8)
+    # Check if version suffix matches current DSSAT version
+    if (modelVersion != dssatVersion) {
+      errorMsg <- paste0("Invalid ModelID '", ModelID, "' in SimulationControl.csv.",
+        " The version suffix '", modelVersion, "' does not match the current DSSAT version '", dssatVersion, "'.",
+        " Expected format: MODEL_NAME + '", dssatVersion, "' (e.g. ", modelName, dssatVersion, ").")
+      print(errorMsg)
+      stop(errorMsg)
+    }
+    # Get crop code from batch file extension (first 2 chars of extension, e.g. .SBC -> SB)
+    batchCrop <- substr(tools::file_ext(CultivarBatchFile), 1, 2)
+    # Check if model name is valid
+    if (!(modelName %in% validModelNames)) {
+      errorMsg <- paste0("Invalid ModelID '", ModelID, "' in SimulationControl.csv.",
+        " The model name '", modelName, "' was not found in SIMULATION.CDE.",
+        " Valid model names: ", paste(unique(validModelNames), collapse = ", "), ".")
+      print(errorMsg)
+      stop(errorMsg)
+    }
+    # Check if model-crop combination is valid
+    validPairs <- paste0(validModelNames, "-", validCropCodes)
+    thisPair <- paste0(modelName, "-", batchCrop)
+    if (!(thisPair %in% validPairs)) {
+      # Find which crops are valid for this model
+      validCropsForModel <- validCropCodes[validModelNames == modelName]
+      errorMsg <- paste0("Model '", modelName, "' does not support crop '", batchCrop,
+        "' (from batch file '", CultivarBatchFile, "').",
+        " Valid crops for model '", modelName, "': ", paste(validCropsForModel, collapse = ", "),
+        ". Please check ModelID in SimulationControl.csv.")
+      print(errorMsg)
+      stop(errorMsg)
+    }
+  }
+} else {
+  warningMsg <- paste0("SIMULATION.CDE file not found. Searched locations: ",
+    paste(simCDEpotentialPaths, collapse = ", "),
+    ". Skipping ModelID validation.")
+  write(warningMsg, file = glueWarningLogFile, append = T)
+  print(warningMsg)
+}
 
 #add slash at the end to the path if missing
 WD <- ifelse(substr(WD, nchar(WD), nchar(WD)) != '/', paste0(WD,"/"), WD)
@@ -71,7 +246,6 @@ if(parallel_available == FALSE) {
   return()
 }
 
-glueWarningLogFile <- file.path(OD, "GlueWarning.txt");
 glueExcludedModelListFile <- file.path(WD, "GlueExcludedModels.csv");
 ##Path of the model run indicator file, which indicates which component of GLUE is finished so far.
 
@@ -665,7 +839,9 @@ print(paste0("Calibration ended at ", Sys.time()))
     #Appending R error msg for debugging
     #fail_run<- paste0(fail_run, "\n***\nR error message:\n", e)
     
-    write(fail_run, file = glueWarningLogFile, append = T)
+    if(exists("glueWarningLogFile")) {
+      write(fail_run, file = glueWarningLogFile, append = T)
+    }
     message(paste0(fail_run, e,"\n"))
     #if(OD != WD){
     #  if(ECTR == TRUE){    
