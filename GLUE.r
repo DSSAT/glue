@@ -2,6 +2,9 @@
 time_test <- Sys.time()
 print(paste0("Calibration started at ", time_test))
 
+# DSSAT version suffix ("048" for DSSAT v4.8)
+dssatVersion <- "048"
+
 #list.of.packages <- c("rjson", "parallel")
 list.of.packages <- c("parallel")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -39,6 +42,28 @@ WorkDirectory<-getwd();
 #DSSATD <- GLUE_defs$DSSATD
 
 SimulationControl<-read.csv(paste0(WorkDirectory,'/SimulationControl.csv'), header=T);
+
+# Validate CSV column headers
+requiredCols <- c("Variable", "Value")
+missingCols <- requiredCols[!(requiredCols %in% colnames(SimulationControl))]
+if (length(missingCols) > 0) {
+  errorMsg <- paste0("SimulationControl.csv has invalid column headers. Found: '",
+    paste(colnames(SimulationControl), collapse = "', '"),
+    "'. Expected columns: '", paste(requiredCols, collapse = "', '"), "'.")
+  print(errorMsg)
+  stop(errorMsg)
+}
+
+# Validate CSV row variables
+requiredVars <- c("CultivarBatchFile", "ModelID", "EcotypeCalibration", "GLUED", "OutputD", "DSSATD", "GLUEFlag", "NumberOfModelRun", "Cores", "GenotypeD")
+missingVars <- requiredVars[!(requiredVars %in% SimulationControl$Variable)]
+if (length(missingVars) > 0) {
+  errorMsg <- paste0("SimulationControl.csv is missing required variable(s): ", paste(missingVars, collapse = ", "),
+    ". Expected headers: 'Variable' and 'Value' with rows for: ", paste(requiredVars, collapse = ", "), ".")
+  print(errorMsg)
+  stop(errorMsg)
+}
+
 NumberOfModelRun <- SimulationControl[SimulationControl$Variable == "NumberOfModelRun","Value"]
 GLUEFlag <- SimulationControl[SimulationControl$Variable == "GLUEFlag","Value"]
 CultivarBatchFile <- SimulationControl[SimulationControl$Variable == "CultivarBatchFile","Value"]
@@ -49,6 +74,156 @@ OD<- SimulationControl[SimulationControl$Variable == "OutputD","Value"]
 GD<- SimulationControl[SimulationControl$Variable == "GenotypeD","Value"]
 DSSATD <- SimulationControl[SimulationControl$Variable == "DSSATD","Value"]
 ModelID <- SimulationControl[SimulationControl$Variable == "ModelID","Value"]
+
+glueWarningLogFile <- file.path(OD, "GlueWarning.txt")
+
+# Validate OutputD 
+if (!dir.exists(OD)) {
+  errorMsg <- paste0("Directory for 'OutputD' does not exist: ", OD,
+    ". Please check the path in SimulationControl.csv.")
+  print(errorMsg)
+  stop(errorMsg)
+}
+file.create(glueWarningLogFile)  # overwrite any previous log
+
+# Validate CultivarBatchFile exists in OutputD
+cultivarBatchPath <- file.path(OD, CultivarBatchFile)
+if (!file.exists(cultivarBatchPath)) {
+  errorMsg <- paste0("CultivarBatchFile '", CultivarBatchFile, "' not found in OutputD directory: ", OD,
+    ". Please check the file name in SimulationControl.csv.")
+  print(errorMsg)
+  stop(errorMsg)
+}
+
+# Validate GLUEFlag
+GLUEFlag <- suppressWarnings(as.numeric(GLUEFlag))
+if (is.na(GLUEFlag) || !(GLUEFlag %in% c(1, 2, 3))) {
+  errorMsg <- "Invalid GLUEFlag in SimulationControl.csv. Must be 1 (phenology & growth), 2 (phenology only), or 3 (growth only)."
+  print(errorMsg)
+  stop(errorMsg)
+}
+
+# Validate NumberOfModelRun
+NumberOfModelRun <- suppressWarnings(as.numeric(NumberOfModelRun))
+if (is.na(NumberOfModelRun) || NumberOfModelRun <= 0) {
+  errorMsg <- "Invalid NumberOfModelRun in SimulationControl.csv. Must be a number greater than 0."
+  print(errorMsg)
+  stop(errorMsg)
+}
+
+# Validate Cores
+if (is.na(Cores) || Cores < 1) {
+  if (!is.na(Sys.getenv("SLURM_CPUS_ON_NODE", unset = NA))) {
+    Cores <- as.integer(Sys.getenv("SLURM_CPUS_ON_NODE"))
+  } else {
+    errorMsg <- "Invalid Cores in SimulationControl.csv. Must be a number >= 1."
+    print(errorMsg)
+    stop(errorMsg)
+  }
+}
+
+# Validate EcotypeCalibration
+validEcoOptions <- c("Y", "N")
+if (!(EcotypeCalibration %in% validEcoOptions)) {
+  warningMsg <- paste0("Invalid EcotypeCalibration value '", EcotypeCalibration,
+    "' in SimulationControl.csv. Valid options: ", paste(validEcoOptions, collapse = ", "),
+    ". Defaulting to EcotypeCalibration = 'N'.")
+  print(warningMsg)
+  EcotypeCalibration <- "N"
+}
+
+# Validate directory paths exist
+pathChecks <- list(
+  list(name = "GLUED", path = WD),
+  list(name = "DSSATD", path = DSSATD),
+  list(name = "GenotypeD", path = GD)
+)
+for (x in pathChecks) {
+  if (!dir.exists(x$path)) {
+    errorMsg <- paste0("Directory for '", x$name, "' does not exist: ", x$path,
+      ". Please check the path in SimulationControl.csv.")
+    print(errorMsg)
+    stop(errorMsg)
+  }
+}
+
+# Validate DSSAT executable exists in DSSATD
+dssatFiles <- list.files(DSSATD, full.names = FALSE)
+dssatExeFound <- any(tolower(dssatFiles) %in% c("dscsm048.exe", "dscsm048"))
+if (!dssatExeFound) {
+  errorMsg <- paste0("DSSAT executable not found in DSSATD directory: ", DSSATD, ".")
+  print(errorMsg)
+  stop(errorMsg)
+}
+
+# Validate ModelID against SIMULATION.CDE
+# Search for SIMULATION.CDE in multiple locations
+simCdePath <- NULL
+simCDEpotentialPaths <- c(
+  "C:/DSSAT48/SIMULATION.CDE",
+  file.path(Sys.getenv("DSSAT_HOME"), "SIMULATION.CDE"),
+  file.path(WD, "SIMULATION.CDE"),
+  file.path(DSSATD, "SIMULATION.CDE")
+)
+for (x in simCDEpotentialPaths) {
+  if (nchar(x) > 0 && file.exists(x)) {
+    simCdePath <- x
+    break
+  }
+}
+
+# If SIMULATION.CDE is not found, skip validation
+if (!is.null(simCdePath)) {
+  simCdeLines <- suppressWarnings(readLines(simCdePath))
+  modelSection <- grep("^@MODEL", simCdeLines)
+  if (length(modelSection) > 0) {
+    modelLines <- simCdeLines[(modelSection[1]+1):length(simCdeLines)]
+    modelLines <- modelLines[nchar(trimws(modelLines)) > 0]
+    # Extract model names (cols 1-5) and crop codes (cols 10-11)
+    validModelNames <- trimws(substr(modelLines, 1, 5))
+    validCropCodes <- trimws(substr(modelLines, 10, 11))
+    # ModelID format is MODEL(5 chars) + VERSION(3 chars), e.g. CRGRO048
+    modelName <- substr(ModelID, 1, 5)
+    modelVersion <- substr(ModelID, 6, 8)
+    # Check if version suffix matches current DSSAT version
+    if (modelVersion != dssatVersion) {
+      errorMsg <- paste0("Invalid ModelID '", ModelID, "' in SimulationControl.csv.",
+        " The version suffix '", modelVersion, "' does not match the current DSSAT version '", dssatVersion, "'.",
+        " Expected format: MODEL_NAME + '", dssatVersion, "' (e.g. ", modelName, dssatVersion, ").")
+      print(errorMsg)
+      stop(errorMsg)
+    }
+    # Get crop code from batch file extension (first 2 chars of extension, e.g. .SBC -> SB)
+    batchCrop <- substr(tools::file_ext(CultivarBatchFile), 1, 2)
+    # Check if model name is valid
+    if (!(modelName %in% validModelNames)) {
+      errorMsg <- paste0("Invalid ModelID '", ModelID, "' in SimulationControl.csv.",
+        " The model name '", modelName, "' was not found in SIMULATION.CDE.",
+        " Valid model names: ", paste(unique(validModelNames), collapse = ", "), ".")
+      print(errorMsg)
+      stop(errorMsg)
+    }
+    # Check if model-crop combination is valid
+    validPairs <- paste0(validModelNames, "-", validCropCodes)
+    thisPair <- paste0(modelName, "-", batchCrop)
+    if (!(thisPair %in% validPairs)) {
+      # Find which crops are valid for this model
+      validCropsForModel <- validCropCodes[validModelNames == modelName]
+      errorMsg <- paste0("Model '", modelName, "' does not support crop '", batchCrop,
+        "' (from batch file '", CultivarBatchFile, "').",
+        " Valid crops for model '", modelName, "': ", paste(validCropsForModel, collapse = ", "),
+        ". Please check ModelID in SimulationControl.csv.")
+      print(errorMsg)
+      stop(errorMsg)
+    }
+  }
+} else {
+  warningMsg <- paste0("SIMULATION.CDE file not found. Searched locations: ",
+    paste(simCDEpotentialPaths, collapse = ", "),
+    ". Skipping ModelID validation.")
+  write(warningMsg, file = glueWarningLogFile, append = T)
+  print(warningMsg)
+}
 
 #add slash at the end to the path if missing
 WD <- ifelse(substr(WD, nchar(WD), nchar(WD)) != '/', paste0(WD,"/"), WD)
@@ -71,7 +246,6 @@ if(parallel_available == FALSE) {
   return()
 }
 
-glueWarningLogFile <- file.path(OD, "GlueWarning.txt");
 glueExcludedModelListFile <- file.path(WD, "GlueExcludedModels.csv");
 ##Path of the model run indicator file, which indicates which component of GLUE is finished so far.
 
@@ -146,7 +320,7 @@ write("GLUE will run for growth only.", file = ModelRunIndicatorPath, append = T
 #second round GLUE will be conducted.
 
 ## (5) Get the  name of the genotype file of current crop and the name of current model
-eval(parse(text=paste("BatchFile<-readLines('",OD,CultivarBatchFile,"',n=-1)",sep = '')));
+eval(parse(text=paste("BatchFile<-suppressWarnings(readLines('",OD,CultivarBatchFile,"',n=-1))",sep = '')));
 CropNameAddress<-grep('BATCH', BatchFile);
 CropNameStart<-18; #
 CropNameEnd<-19; #
@@ -233,14 +407,20 @@ CulFile.origin= readLines(paste0(GD,GenotypeFileName,".CUL"))#, encoding="UTF-8"
 
 if(length(grep("999991 MINIMA", CulFile.origin)) == 0){
   errorMsg <- "Lower bound (MINIMA) not specified in the cultivar file. Please correct the file."
+  write(errorMsg, file = glueWarningLogFile, append = T)
+  print(errorMsg)
   return(NULL)
 }
 if(length(grep("999992 MAXIMA", CulFile.origin)) == 0){
   errorMsg <- "Upper bound (MAXIMA) not specified in the cultivar file. Please correct the file."
+  write(errorMsg, file = glueWarningLogFile, append = T)
+  print(errorMsg)
   return(NULL)
 }
 if(length(grep("!Calibration", CulFile.origin)) == 0){
   errorMsg <- "Missing the calibration switches (P/G/N) in the cultivar file. Please correct the file."
+  write(errorMsg, file = glueWarningLogFile, append = T)
+  print(errorMsg)
   return(NULL)
 }
 
@@ -269,7 +449,23 @@ write(c("Parameter property:",CulFile ), file = ModelRunIndicatorPath, append = 
 CulFile.df = paste0(substr(CulFile,1,6), substr(CulFile,30,nchar(CulFile)[1]))
 Cul.Header = unlist(strsplit(CulFile.df[2],split="(\\s|\\|)+"))
 Cul.Header = Cul.Header[which(nchar(Cul.Header)>0)]
-CulData = read.table(textConnection(CulFile.df[-c(1,2)]),header=F)
+
+# Check that all data rows (MINIMA, MAXIMA, cultivar) have the same number of elements as the header
+CulFile.dataLines <- CulFile.df[-c(1,2)]
+for (dl in seq_along(CulFile.dataLines)) {
+  rowTokens <- unlist(strsplit(trimws(CulFile.dataLines[dl]), "\\s+"))
+  rowLabel <- c("MINIMA", "MAXIMA", "cultivar ID")[dl]
+  if (length(rowTokens) != length(Cul.Header)) {
+    errorMsg <- paste0("Cultivar file: ", rowLabel, " row has ", length(rowTokens),
+      " values but the header has ", length(Cul.Header),
+      " columns. Check for missing or extra values in the cultivar file.")
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
+    stop(errorMsg)
+  }
+}
+
+CulData = read.table(textConnection(CulFile.dataLines),header=F)
 Cul.Header = Cul.Header[1:length(colnames(CulData))]
 colnames(CulData) = Cul.Header
 
@@ -280,9 +476,35 @@ colnames(Cul.Cali.df) = Cul.Header
 Cul.Cali.df = Cul.Cali.df[1:length(Cul.Header)]
 CulData = rbind(CulData,Cul.Cali.df)
 
+# Check column alignment: header count must match data columns
+if(length(Cul.Header) != ncol(CulData)) {
+  errorMsg <- paste0("Cultivar file column mismatch: header has ", length(Cul.Header),
+    " columns but data has ", ncol(CulData), " columns. Check the cultivar file format.")
+  write(errorMsg, file = glueWarningLogFile, append = T)
+  print(errorMsg)
+  return(NULL)
+}
+if(ncol(Cul.Cali.df) != ncol(CulData)) {
+  errorMsg <- paste0("Cultivar file calibration row mismatch: calibration line has ", ncol(Cul.Cali.df),
+    " values but data has ", ncol(CulData), " columns. Check the !Calibration line in the cultivar file.")
+  write(errorMsg, file = glueWarningLogFile, append = T)
+  print(errorMsg)
+  return(NULL)
+}
+
 ncol.predefined = which(Cul.Header=="ECO#")
 Cul.TotalParameterNumber = ncol(CulData) - ncol.predefined #Get the total number of the parameters.
 Cul.ParameterNames = Cul.Header[-c(1:ncol.predefined)]
+
+dotParamsCul <- Cul.ParameterNames[grepl("\\.", Cul.ParameterNames)]
+if (length(dotParamsCul) > 0) {
+  errorMsg <- paste0("Cultivar file: Invalid parameter name(s) containing '.'",
+    ". This might cause issues with the calibration process",
+    ". Check the cultivar file for misaligned columns or malformed headers.")
+  write(errorMsg, file = glueWarningLogFile, append = T)
+  print(errorMsg)
+}
+
 write(c("Cultivar File Parameters =",Cul.ParameterNames), file = ModelRunIndicatorPath, append = T)
 
 
@@ -293,14 +515,20 @@ if(EcotypeCalibration == "Y"){
   
   if(length(grep("999991 MINIMA", Eco.File.origin)) == 0){
     errorMsg <- "Lower bound (MINIMA) not specified in the ecotype file. Please correct the file."
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
     return(NULL)
   }
   if(length(grep("999992 MAXIMA", Eco.File.origin)) == 0){
     errorMsg <- "Upper bound (MAXIMA) not specified in the ecotype file. Please correct the file."
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
     return(NULL)
   }
   if(length(grep("!Calibration", Eco.File.origin)) == 0){
     errorMsg <- "Missing the calibration switches (P/G/N) in the ecotype file. Please correct the file."
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
     return(NULL)
   }
   
@@ -333,21 +561,69 @@ if(EcotypeCalibration == "Y"){
   write(c("Ecotype Parameter property:",EcoFile ), file = ModelRunIndicatorPath, append = T);
   
   # convert text to dataframe
-  EcoFile.df = paste0(substr(EcoFile,1,6), substr(EcoFile,24,nchar(EcoFile)[1]))
+  EcoFile.df = paste0(substr(EcoFile,1,6), substr(EcoFile,25,nchar(EcoFile)[1]))
+  if (grepl("@ECO#\\s+\\.", EcoFile.df[2])) {
+    errorMsg <- "Invalid ecotype header: found additional '.' after @ECO#. Adjust it to continue."
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
+    return(NULL)
+  }
   Eco.Header = unlist(strsplit(EcoFile.df[2],split="(\\s|\\|)+"))
   Eco.Header = Eco.Header[which(nchar(Eco.Header)>0)]
-  EcoData = read.table(textConnection(EcoFile.df[-c(1,2)]),header=F)
+
+  # Check that all data rows (MINIMA, MAXIMA, ecotype) have the same number of elements as the header
+  EcoFile.dataLines <- EcoFile.df[-c(1,2)]
+  for (dl in seq_along(EcoFile.dataLines)) {
+    rowTokens <- unlist(strsplit(trimws(EcoFile.dataLines[dl]), "\\s+"))
+    rowLabel <- c("MINIMA", "MAXIMA", "ecotype ID")[dl]
+    if (length(rowTokens) != length(Eco.Header)) {
+      errorMsg <- paste0("Ecotype file: ", rowLabel, " row has ", length(rowTokens),
+        " values but the header has ", length(Eco.Header),
+        " columns. Check for missing or extra values in the ecotype file.")
+      write(errorMsg, file = glueWarningLogFile, append = T)
+      print(errorMsg)
+      stop(errorMsg)
+    }
+  }
+
+  EcoData = read.table(textConnection(EcoFile.dataLines),header=F)
   Eco.Header = Eco.Header[1:length(colnames(EcoData))]
   colnames(EcoData) = Eco.Header
   
   Eco.Cali = unlist(strsplit(EcoFile[1],"\\s+"))
-  Eco.Cali.reshape = paste(c(Eco.Cali[1], Eco.Cali[2:length(Eco.Cali)]), sep=" ", collapse = " ")
+  cols_to_placeholder <- c("MG", "TM")
+  existing_cols_file <- cols_to_placeholder[cols_to_placeholder %in% Eco.Header]
+  if (length(existing_cols_file) > 0) {
+    Eco.Cali.reshape = paste(c(Eco.Cali[1],"placeholder placeholder", Eco.Cali[4:length(Eco.Cali)]), sep=" ", collapse = " ")
+  }else{
+    Eco.Cali.reshape = paste(c(Eco.Cali[1], Eco.Cali[2:length(Eco.Cali)]), sep=" ", collapse = " ")
+  }
   Eco.Cali.df = read.table(textConnection(Eco.Cali.reshape),header = F)
   colnames(Eco.Cali.df) = Eco.Header
   Eco.Cali.df = Eco.Cali.df[1:length(Eco.Header)]
   EcoData = rbind(EcoData,Eco.Cali.df)
   
-  Eco.ncol.predefined = which(Eco.Header=="@ECO#")
+  # Check column alignment: header count must match data columns
+  if(length(Eco.Header) != ncol(EcoData)) {
+    errorMsg <- paste0("Ecotype file column mismatch: header has ", length(Eco.Header),
+      " columns but data has ", ncol(EcoData), " columns. Check the ecotype file format.")
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
+    return(NULL)
+  }
+  if(ncol(Eco.Cali.df) != ncol(EcoData)) {
+    errorMsg <- paste0("Ecotype file calibration row mismatch: calibration line has ", ncol(Eco.Cali.df),
+      " values but data has ", ncol(EcoData), " columns. Check the !Calibration line in the ecotype file.")
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
+    return(NULL)
+  }
+  
+  if (length(existing_cols_file) > 0) {
+    Eco.ncol.predefined = which(Eco.Header=="TM")
+  }else{
+    Eco.ncol.predefined = which(Eco.Header=="@ECO#")
+  }
   Eco.TotalParameterNumber = ncol(EcoData) - Eco.ncol.predefined #Get the total number of the parameters.
   Eco.ParameterNames = Eco.Header[-c(1:Eco.ncol.predefined)]
   write(c("Ecotype File Parameters =",Eco.ParameterNames), file = ModelRunIndicatorPath, append = T)
@@ -356,7 +632,26 @@ if(EcotypeCalibration == "Y"){
   CulData[nrow(CulData)+1,] <- "Cultivar"
   EcoData[nrow(EcoData)+1,] <- "Ecotype"
   
-  DataColumns <- cbind(CulData, EcoData[-1]) #remove Ecotype first line and merge
+  #remove non-parameter columns from ecoytpe (., MG, TM)
+  cols_to_remove <- c(".", "@ECO#", "MG", "TM")
+  existing_cols <- cols_to_remove[cols_to_remove %in% colnames(EcoData)]
+
+  dotParamsEco <- Eco.ParameterNames[grepl("\\.", Eco.ParameterNames)]
+  if (length(dotParamsEco) > 0) {
+    errorMsg <- paste0("Ecotype file: Invalid parameter name(s) containing '.'",
+      ". This might cause issues with the calibration process",
+      ". Check the ecotype file for misaligned columns or malformed headers.")
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
+  }  
+
+  if(length(existing_cols) > 0) {
+    EcoData <- EcoData[, !(colnames(EcoData) %in% existing_cols), drop = FALSE]
+    Eco.ParameterNames <- Eco.ParameterNames[!(Eco.ParameterNames %in% existing_cols)]
+    Eco.TotalParameterNumber <- length(Eco.ParameterNames)
+  }
+  
+  DataColumns <- cbind(CulData, EcoData)
   TotalParameterNumber <- Cul.TotalParameterNumber + Eco.TotalParameterNumber
   ParameterNames <- c(Cul.ParameterNames, Eco.ParameterNames)
   EcotypeID <- EcotypeID
@@ -368,6 +663,25 @@ if(EcotypeCalibration == "Y"){
   DataColumns <- CulData
   TotalParameterNumber <- Cul.TotalParameterNumber
   ParameterNames <- Cul.ParameterNames
+}
+
+# Check parameter values in DataColumns
+paramCols <- (ncol.predefined + 1):ncol(DataColumns)
+# Rows 1-3 (MINIMA, MAXIMA and cultivarID) are numeric. 
+# Row 4 is calibration flags (P/G/N) and row 5 is origin tag (cultivar/ecotype) — those are expected to be strings.
+for (r in 1:3) {
+  for (pc in paramCols) {
+    val <- DataColumns[r, pc]
+    if (is.na(suppressWarnings(as.numeric(as.character(val))))) {
+      rowLabel <- c("MINIMA", "MAXIMA", "cultivar ID")[r]
+      errorMsg <- paste0("Non-numeric value '", val, "' found on ", rowLabel,
+        ", column '", colnames(DataColumns)[pc],
+        "'. Check the cultivar/ecotype file for misaligned columns.")
+      write(errorMsg, file = glueWarningLogFile, append = T)
+      print(errorMsg)
+      stop(errorMsg)
+    }
+  }
 }
 
 #################Step 2: Begin the GLUE procedure.#################
@@ -525,7 +839,9 @@ print(paste0("Calibration ended at ", Sys.time()))
     #Appending R error msg for debugging
     #fail_run<- paste0(fail_run, "\n***\nR error message:\n", e)
     
-    write(fail_run, file = glueWarningLogFile, append = T)
+    if(exists("glueWarningLogFile")) {
+      write(fail_run, file = glueWarningLogFile, append = T)
+    }
     message(paste0(fail_run, e,"\n"))
     #if(OD != WD){
     #  if(ECTR == TRUE){    

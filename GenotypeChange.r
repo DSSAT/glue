@@ -4,6 +4,7 @@ GenotypeChange<-function(GD, DSSATD, OD, CropName, GenotypeFileName, CultivarID,
 {
 eval(parse(text=paste('GenotypeFilePath="',GD,'/',GenotypeFileName,'.CUL"',sep = '')));
 
+EcoCROPGROformat <- 0
 ReadLine<-readLines(GenotypeFilePath, n=-1)
 GenotypeFile<-as.character(ReadLine); #Get the genotype file saved as a template.
 
@@ -20,6 +21,7 @@ if(EcotypeParameters > 0){
   EcotypeFile<-as.character(EcoReadLine); #Get the genotype file saved as a template.
   EcoLineNumber<-grep(pattern=EcotypeID, EcotypeFile);
   EcoOldLine<-EcotypeFile[EcoLineNumber];
+  EcoCROPGROformat <- grep(pattern="MG TM", EcotypeFile);
 }
 
 # if (CropName != "SC")
@@ -28,9 +30,13 @@ if(EcotypeParameters > 0){
   ValuePosition1<-(38-ParameterStep);
   ValuePosition2<-(42-ParameterStep);
   
-  EcoValuePosition1 <- (26-ParameterStep);
-  EcoValuePosition2 <- (30-ParameterStep);
-
+  if(length(EcoCROPGROformat) > 0){
+    EcoValuePosition1 <- (32-ParameterStep);
+    EcoValuePosition2 <- (36-ParameterStep);  
+  }else{
+    EcoValuePosition1 <- (26-ParameterStep);
+    EcoValuePosition2 <- (30-ParameterStep);
+  }
   for (i in 1:TotalParameterNumber)
   {
   ValuePosition1<-ValuePosition1+ParameterStep;
@@ -131,7 +137,7 @@ if(EcotypeParameters > 0){
 #   write(ECOFile, file=NewECOFilePath);
 #   #Save the ECO file in the GLWork directory. 
 # }
-                                                   
+#print(OldLine)                                              
 eval(parse(text=paste("NewGenotypeFilePath='",OD,"/",GenotypeFileName,".CUL'",sep = '')));
 write(GenotypeFile, file=NewGenotypeFilePath);
 #Save the new genotype file as "cul" file in the GLWork directory.

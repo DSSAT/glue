@@ -65,7 +65,7 @@ pbapply_custom <- function (X, FUN, ..., cl = NULL)
         rval[i] <- list(PAR_FUN(cl, X[Split[[i]]], FUN, 
                                 ...))
         setpb(pb, i)
-        write.table(i/B*100,file = paste0(OD,'process.txt'), row.names = FALSE, col.names = FALSE)
+        write.table(i/B*100,file = paste0(OD,'progress.txt'), row.names = FALSE, col.names = FALSE)
       }
     }
     else if (identical(cl, "future")) {
