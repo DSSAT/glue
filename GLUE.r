@@ -435,6 +435,27 @@ LineNo.max = grep("999992 MAXIMA",CulFile)
 LineNo.cal = grep("!Calibration",CulFile)
 Lineno.thiscul = grep(paste0("^",CultivarID),CulFile)
 
+# Validate CultivarID exists in the cultivar file
+if (length(Lineno.thiscul) == 0) {
+  errorMsg <- paste0("Cultivar ID '", CultivarID, "' from batch file '", CultivarBatchFile,
+    "' was not found in the cultivar file '", GenotypeFileName, ".CUL'.",
+    " Please check the $BATCH header in the batch file or add this cultivar to the .CUL file.")
+  write(errorMsg, file = glueWarningLogFile, append = T)
+  print(errorMsg)
+  stop(errorMsg)
+}
+
+# Validate CultivarName matches the cultivar file entry
+culFileLine <- CulFile[Lineno.thiscul[1]]
+culFileFullName <- trimws(substr(culFileLine, 1, 29))
+batchFullName <- trimws(CultivarName)
+if (culFileFullName != batchFullName && !startsWith(culFileFullName, batchFullName) && !startsWith(batchFullName, culFileFullName)) {
+  warningMsg <- paste0("Cultivar name mismatch: batch file has '", batchFullName,
+    "' but cultivar file has '", culFileFullName, "'. Proceeding with cultivar file values.")
+  write(warningMsg, file = glueWarningLogFile, append = T)
+  print(warningMsg)
+}
+
 LineNo.all = c(LineNo.cal[1],LineNo.title,LineNo.min,LineNo.max,Lineno.thiscul)
 
 if(length(LineNo.cal)>1){
@@ -549,6 +570,15 @@ if(EcotypeCalibration == "Y"){
   Eco.LineNo.cal = grep("!Calibration",EcoFile)
 
   Eco.Lineno.thiseco = grep(paste0("^",EcotypeID),EcoFile)
+
+  # Validate EcotypeID exists in the ecotype file
+  if (length(Eco.Lineno.thiseco) == 0) {
+    errorMsg <- paste0("Ecotype ID '", EcotypeID, "' from the cultivar file was not found in the ecotype file '",
+      GenotypeFileName, ".ECO'. Please check the ECO# column in the .CUL file or add this ecotype to the .ECO file.")
+    write(errorMsg, file = glueWarningLogFile, append = T)
+    print(errorMsg)
+    stop(errorMsg)
+  }
   
   Eco.LineNo.all = c(Eco.LineNo.cal[1],Eco.LineNo.title,Eco.LineNo.min,Eco.LineNo.max,Eco.Lineno.thiseco)
   
