@@ -61,6 +61,11 @@ if(CropName != "SC")
   ValuePosition2<-ValuePosition2+Step;
 
   eval(parse(text = paste("Parameter<-OptimalParameterSet[1,",i,"]",sep = '')));
+  if (is.na(Parameter))
+  {
+  ParameterFormat<-sprintf(paste0('%', ValuePosition2 - ValuePosition1 + 1, 's'), '.');
+  } else
+  {
   #To solve the format problem for parameters with negative values. Modified by He, 2015-6-18.
   if(Parameter < 0 & Parameter > -1.0)                                                          #
   {                                                                                             #
@@ -83,6 +88,7 @@ if(CropName != "SC")
   } else if (Parameter >= 100)
   {
   ParameterFormat<-sprintf('%3.1f', Parameter);
+  }
   }
   if(EcotypeParameters > 0 & i > (TotalParameterNumber - EcotypeParameters)){ #Write on .ECO file
     EcoValuePosition1 <- EcoValuePosition1+Step;
