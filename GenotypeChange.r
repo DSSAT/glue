@@ -43,6 +43,11 @@ if(EcotypeParameters > 0){
   ValuePosition2<-ValuePosition2+ParameterStep;
 
   eval(parse(text = paste("Parameter<-RandomMatrix[R,",i,"]",sep = '')));
+  if (is.na(Parameter))
+  {
+  ParameterFormat<-sprintf(paste0('%', ValuePosition2 - ValuePosition1 + 1, 's'), '.');
+  } else
+  {
   #To solve the format problem for parameters with negative values. Modified by He, 2015-6-18.
   if(Parameter < 0 & Parameter > -1.0)                                                          #
   {                                                                                             #
@@ -65,6 +70,7 @@ if(EcotypeParameters > 0){
   } else if (Parameter >= 100)
   {
   ParameterFormat<-sprintf('%3.1f', Parameter);
+  }
   }
 
   if(EcotypeParameters > 0 & i > (TotalParameterNumber - EcotypeParameters)){ #Write on .ECO file

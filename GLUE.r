@@ -699,11 +699,29 @@ if(EcotypeCalibration == "Y"){
 paramCols <- (ncol.predefined + 1):ncol(DataColumns)
 # Rows 1-3 (MINIMA, MAXIMA and cultivarID) are numeric. 
 # Row 4 is calibration flags (P/G/N) and row 5 is origin tag (cultivar/ecotype) — those are expected to be strings.
+calibratedFlags <- c("P", "G")[c(GLUEFlag %in% c(1, 2), GLUEFlag %in% c(1, 3))]
 for (r in 1:3) {
   for (pc in paramCols) {
     val <- DataColumns[r, pc]
+    rowLabel <- c("MINIMA", "MAXIMA", "cultivar ID")[r]
+    if (isTRUE(trimws(as.character(val)) %in% c(".", ""))) {
+      flag <- trimws(as.character(DataColumns[4, pc]))
+      if (r <= 2 && flag %in% calibratedFlags) {
+        errorMsg <- paste0("Missing ", rowLabel, " value for parameter '", colnames(DataColumns)[pc],
+          "', which is flagged as '", flag, "' for calibration. Provide a valid ", rowLabel,
+          " value or set its calibration flag to 'N'.")
+        write(errorMsg, file = glueWarningLogFile, append = T)
+        print(errorMsg)
+        stop(errorMsg)
+      }
+      warningMsg <- paste0("Warning: missing value '.' found on ", rowLabel,
+        ", column '", colnames(DataColumns)[pc],
+        "'. Calibration will continue, but this parameter may not be calibrated correctly.")
+      write(warningMsg, file = glueWarningLogFile, append = T)
+      print(warningMsg)
+      next
+    }
     if (is.na(suppressWarnings(as.numeric(as.character(val))))) {
-      rowLabel <- c("MINIMA", "MAXIMA", "cultivar ID")[r]
       errorMsg <- paste0("Non-numeric value '", val, "' found on ", rowLabel,
         ", column '", colnames(DataColumns)[pc],
         "'. Check the cultivar/ecotype file for misaligned columns.")
